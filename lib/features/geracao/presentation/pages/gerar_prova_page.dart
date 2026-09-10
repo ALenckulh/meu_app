@@ -46,59 +46,148 @@ class _GerarProvaPageState extends ConsumerState<GerarProvaPage> {
   @override
   Widget build(BuildContext context) {
     const List<String> labels = <String>['A', 'B', 'C', 'D'];
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final TextTheme text = Theme.of(context).textTheme;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Prévia da prova')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
               children: <Widget>[
-                Text(
-                  _prova?.titulo ?? '',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Visualização antes da impressão (mock N1)',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
-                const Divider(height: 32),
-                ...List<Widget>.generate(_questoes.length, (int index) {
-                  final Questao q = _questoes[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
+                // Cabeçalho da prova
+                Card(
+                  elevation: 0,
+                  color: scheme.primaryContainer,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: <Widget>[
                         Text(
-                          '${index + 1}. ${q.enunciado}',
-                          style: Theme.of(context).textTheme.titleMedium,
+                          _prova?.titulo ?? '',
+                          style: text.headlineSmall?.copyWith(
+                            color: scheme.onPrimaryContainer,
+                          ),
                         ),
-                        const SizedBox(height: 6),
-                        ...List<Widget>.generate(
-                          4,
-                          (int i) => Text('${labels[i]}) ${q.alternativas[i]}'),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: <Widget>[
+                            Icon(
+                              Icons.help_outline,
+                              size: 16,
+                              color: scheme.onPrimaryContainer,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${_questoes.length} questões · Visualização antes da impressão (mock N1)',
+                              style: text.bodySmall?.copyWith(
+                                color: scheme.onPrimaryContainer,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Lista de questões
+                ...List<Widget>.generate(_questoes.length, (int index) {
+                  final Questao q = _questoes[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: scheme.outlineVariant),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              CircleAvatar(
+                                radius: 14,
+                                backgroundColor: scheme.secondaryContainer,
+                                child: Text(
+                                  '${index + 1}',
+                                  style: text.labelLarge?.copyWith(
+                                    color: scheme.onSecondaryContainer,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  q.enunciado,
+                                  style: text.titleMedium,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          ...List<Widget>.generate(4, (int i) {
+                            return Padding(
+                              padding: const EdgeInsets.only(
+                                left: 40,
+                                bottom: 6,
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  Container(
+                                    width: 22,
+                                    height: 22,
+                                    alignment: Alignment.center,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: scheme.outline,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      labels[i],
+                                      style: text.labelSmall,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      q.alternativas[i],
+                                      style: text.bodyMedium,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
                   );
                 }),
-                FilledButton(
+
+                const SizedBox(height: 8),
+                FilledButton.icon(
                   key: const Key('btn-folha-respostas'),
                   onPressed: () =>
                       context.push('/provas/${widget.provaId}/folha'),
-                  child: const Text('Prévia da folha de respostas'),
+                  icon: const Icon(Icons.description_outlined),
+                  label: const Text('Prévia da folha de respostas'),
                 ),
                 const SizedBox(height: 8),
-                OutlinedButton(
+                OutlinedButton.icon(
                   key: const Key('btn-individualizacao'),
                   onPressed: () => context
                       .push('/provas/${widget.provaId}/individualizacao'),
-                  child: const Text('Individualização por aluno'),
+                  icon: const Icon(Icons.people_outline),
+                  label: const Text('Individualização por aluno'),
                 ),
               ],
             ),

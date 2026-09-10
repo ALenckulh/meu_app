@@ -36,7 +36,8 @@ class _IndividualizacaoPageState extends ConsumerState<IndividualizacaoPage> {
     _alunoId = alunos.isNotEmpty ? alunos.first.id : null;
     if (_alunoId != null) {
       try {
-        _variacao = vars.firstWhere((VariacaoDeProva v) => v.alunoId == _alunoId);
+        _variacao =
+            vars.firstWhere((VariacaoDeProva v) => v.alunoId == _alunoId);
       } catch (_) {
         _variacao = vars.isNotEmpty ? vars.first : null;
       }
@@ -78,77 +79,203 @@ class _IndividualizacaoPageState extends ConsumerState<IndividualizacaoPage> {
         break;
       }
     }
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final TextTheme text = Theme.of(context).textTheme;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Individualização')),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
               children: <Widget>[
-                DropdownButtonFormField<String>(
-                  key: const Key('select-aluno-individual'),
-                  initialValue: _alunoId,
-                  decoration: const InputDecoration(
-                    labelText: 'Aluno',
-                    hintText: 'Selecione o aluno',
-                    helperText: 'Aluno para simular a individualização.',
+                Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: BorderSide(color: scheme.outlineVariant),
                   ),
-                  items: _alunos
-                      .map(
-                        (Aluno a) => DropdownMenuItem<String>(
-                          value: a.id,
-                          child: Text(a.nome),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: _onAlunoChanged,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: DropdownButtonFormField<String>(
+                      key: const Key('select-aluno-individual'),
+                      initialValue: _alunoId,
+                      decoration: const InputDecoration(
+                        labelText: 'Aluno',
+                        hintText: 'Selecione o aluno',
+                        helperText: 'Aluno para simular a individualização.',
+                        border: InputBorder.none,
+                      ),
+                      items: _alunos
+                          .map(
+                            (Aluno a) => DropdownMenuItem<String>(
+                              value: a.id,
+                              child: Text(a.nome),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: _onAlunoChanged,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 24),
-                _ChainStep(label: 'Aluno', value: aluno?.nome ?? '—'),
-                const Icon(Icons.arrow_downward),
-                _ChainStep(
+                Text(
+                  'Fluxo de geração',
+                  style: text.labelLarge?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Linha do tempo do processo de individualização
+                _TimelineStep(
+                  icon: Icons.person_outline,
+                  label: 'Aluno',
+                  value: aluno?.nome ?? '—',
+                  caption:
+                      aluno != null ? 'Matrícula ${aluno.matricula}' : null,
+                ),
+                _TimelineStep(
+                  icon: Icons.shuffle,
                   label: 'Variação da prova',
                   value: _variacao?.id ?? '—',
+                  caption: _variacao != null
+                      ? '${_variacao!.ordemQuestoes.length} questões embaralhadas'
+                      : null,
                 ),
-                const Icon(Icons.arrow_downward),
-                const _ChainStep(
+                const _TimelineStep(
+                  icon: Icons.description_outlined,
                   label: 'Folha de respostas',
                   value: 'Prévia individualizada',
                 ),
-                const Icon(Icons.arrow_downward),
-                const _ChainStep(label: 'QR Code', value: 'Payload mock'),
-                const SizedBox(height: 16),
-                if (_variacao != null)
-                  Center(
-                    child: ColoredBox(
-                      color:
-                          Theme.of(context).colorScheme.surfaceContainerLowest,
-                      child: QrImageView(
-                        data:
-                            'MOCK|prova=${widget.provaId}|var=${_variacao!.id}|aluno=${_variacao!.alunoId}',
-                        size: 140,
-                      ),
-                    ),
-                  ),
+                _TimelineStep(
+                  icon: Icons.qr_code_2,
+                  label: 'QR Code',
+                  value: 'Payload mock',
+                  isLast: true,
+                  trailing: _variacao == null
+                      ? null
+                      : Padding(
+                          padding: const EdgeInsets.only(top: 12),
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: scheme.surfaceContainerLowest,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: scheme.outline),
+                              ),
+                              child: QrImageView(
+                                data:
+                                    'MOCK|prova=${widget.provaId}|var=${_variacao!.id}|aluno=${_variacao!.alunoId}',
+                                size: 140,
+                              ),
+                            ),
+                          ),
+                        ),
+                ),
               ],
             ),
     );
   }
 }
 
-class _ChainStep extends StatelessWidget {
-  const _ChainStep({required this.label, required this.value});
+/// Um passo da linha do tempo do fluxo de individualização, com um
+/// indicador circular conectado por uma linha vertical de tamanho fixo
+/// ao próximo passo.
+class _TimelineStep extends StatelessWidget {
+  const _TimelineStep({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.caption,
+    this.trailing,
+    this.isLast = false,
+  });
 
+  final IconData icon;
   final String label;
   final String value;
+  final String? caption;
+  final Widget? trailing;
+  final bool isLast;
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      title: Text(label),
-      subtitle: Text(value),
-      tileColor: Theme.of(context).colorScheme.surfaceContainerLow,
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final TextTheme text = Theme.of(context).textTheme;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        // Indicador: círculo com ícone + linha conectora de tamanho fixo.
+        // (Não usamos IntrinsicHeight aqui: o QrImageView do passo final
+        // usa LayoutBuilder internamente, e o Flutter não permite calcular
+        // dimensões intrínsecas quando há um LayoutBuilder na subárvore.)
+        SizedBox(
+          width: 36,
+          child: Column(
+            children: <Widget>[
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: scheme.secondaryContainer,
+                child: Icon(
+                  icon,
+                  size: 18,
+                  color: scheme.onSecondaryContainer,
+                ),
+              ),
+              if (!isLast)
+                Container(
+                  width: 2,
+                  height: 28,
+                  margin: const EdgeInsets.symmetric(vertical: 4),
+                  color: scheme.outlineVariant,
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 12),
+        // Conteúdo do passo
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Card(
+              elevation: 0,
+              color: scheme.surfaceContainerLow,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      label,
+                      style: text.labelMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(value, style: text.titleMedium),
+                    if (caption != null) ...<Widget>[
+                      const SizedBox(height: 2),
+                      Text(
+                        caption!,
+                        style: text.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                    if (trailing != null) trailing!,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
