@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meu_app/core/di/providers.dart';
+import 'package:meu_app/core/widgets/section_header.dart';
 import 'package:meu_app/shared/models/aluno.dart';
 import 'package:meu_app/shared/models/variacao_de_prova.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -79,8 +80,8 @@ class _IndividualizacaoPageState extends ConsumerState<IndividualizacaoPage> {
         break;
       }
     }
-    final ColorScheme scheme = Theme.of(context).colorScheme;
-    final TextTheme text = Theme.of(context).textTheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Individualização')),
@@ -90,13 +91,8 @@ class _IndividualizacaoPageState extends ConsumerState<IndividualizacaoPage> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
               children: <Widget>[
                 Card(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: scheme.outlineVariant),
-                  ),
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                     child: DropdownButtonFormField<String>(
                       key: const Key('select-aluno-individual'),
                       initialValue: _alunoId,
@@ -105,6 +101,10 @@ class _IndividualizacaoPageState extends ConsumerState<IndividualizacaoPage> {
                         hintText: 'Selecione o aluno',
                         helperText: 'Aluno para simular a individualização.',
                         border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        filled: false,
+                        prefixIcon: Icon(Icons.person_outline),
                       ),
                       items: _alunos
                           .map(
@@ -118,16 +118,7 @@ class _IndividualizacaoPageState extends ConsumerState<IndividualizacaoPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  'Fluxo de geração',
-                  style: text.labelLarge?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 8),
-
-                // Linha do tempo do processo de individualização
+                const SectionHeader('Fluxo de geração'),
                 _TimelineStep(
                   icon: Icons.person_outline,
                   label: 'Aluno',
@@ -162,7 +153,7 @@ class _IndividualizacaoPageState extends ConsumerState<IndividualizacaoPage> {
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
                                 color: scheme.surfaceContainerLowest,
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: scheme.outline),
                               ),
                               child: QrImageView(
@@ -202,8 +193,9 @@ class _TimelineStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme scheme = Theme.of(context).colorScheme;
-    final TextTheme text = Theme.of(context).textTheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+    final TextTheme text = theme.textTheme;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -213,17 +205,13 @@ class _TimelineStep extends StatelessWidget {
         // usa LayoutBuilder internamente, e o Flutter não permite calcular
         // dimensões intrínsecas quando há um LayoutBuilder na subárvore.)
         SizedBox(
-          width: 36,
+          width: 40,
           child: Column(
             children: <Widget>[
               CircleAvatar(
                 radius: 18,
-                backgroundColor: scheme.secondaryContainer,
-                child: Icon(
-                  icon,
-                  size: 18,
-                  color: scheme.onSecondaryContainer,
-                ),
+                backgroundColor: scheme.primaryContainer,
+                child: Icon(icon, size: 18, color: scheme.onPrimaryContainer),
               ),
               if (!isLast)
                 Container(
@@ -236,41 +224,45 @@ class _TimelineStep extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        // Conteúdo do passo
         Expanded(
           child: Padding(
             padding: const EdgeInsets.only(bottom: 16),
-            child: Card(
-              elevation: 0,
-              color: scheme.surfaceContainerLow,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+            child: Container(
+              decoration: BoxDecoration(
+                color: scheme.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: scheme.primary.withValues(alpha: 0.08),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    Text(
-                      label,
-                      style: text.labelMedium?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    label.toUpperCase(),
+                    style: text.labelSmall?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.6,
                     ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(value, style: text.titleMedium),
+                  if (caption != null) ...<Widget>[
                     const SizedBox(height: 2),
-                    Text(value, style: text.titleMedium),
-                    if (caption != null) ...<Widget>[
-                      const SizedBox(height: 2),
-                      Text(
-                        caption!,
-                        style: text.bodySmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                    if (trailing != null) trailing!,
+                    Text(
+                      caption!,
+                      style: text.bodySmall
+                          ?.copyWith(color: scheme.onSurfaceVariant),
+                    ),
                   ],
-                ),
+                  ?trailing,
+                ],
               ),
             ),
           ),

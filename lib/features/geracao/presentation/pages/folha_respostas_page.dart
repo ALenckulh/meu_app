@@ -36,8 +36,9 @@ class _FolhaRespostasPageState extends ConsumerState<FolhaRespostasPage> {
     const List<String> labels = <String>['A', 'B', 'C', 'D'];
     final String qrPayload =
         'MOCK|prova=${widget.provaId}|var=var-1|aluno=aluno-1';
-    final ColorScheme scheme = Theme.of(context).colorScheme;
-    final TextTheme text = Theme.of(context).textTheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+    final TextTheme text = theme.textTheme;
     final int quantidade = _prova?.questaoIds.length ?? 0;
 
     return Scaffold(
@@ -47,13 +48,7 @@ class _FolhaRespostasPageState extends ConsumerState<FolhaRespostasPage> {
           : ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
               children: <Widget>[
-                // "Cabeçalho" estilo cartão-resposta: título + campo aluno + QR
                 Card(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: scheme.outlineVariant),
-                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Row(
@@ -63,24 +58,13 @@ class _FolhaRespostasPageState extends ConsumerState<FolhaRespostasPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: <Widget>[
-                              Text(
-                                _prova?.titulo ?? '',
-                                style: text.titleLarge,
-                              ),
-                              const SizedBox(height: 12),
-                              Text('Nome:', style: text.bodySmall),
-                              Container(
-                                margin: const EdgeInsets.only(top: 4),
-                                height: 1,
-                                color: scheme.outlineVariant,
-                              ),
-                              const SizedBox(height: 12),
-                              Text('Turma:', style: text.bodySmall),
-                              Container(
-                                margin: const EdgeInsets.only(top: 4),
-                                height: 1,
-                                color: scheme.outlineVariant,
-                              ),
+                              Text(_prova?.titulo ?? '',
+                                  style: text.titleLarge?.copyWith(
+                                      fontWeight: FontWeight.w700)),
+                              const SizedBox(height: 16),
+                              _FieldLine(label: 'Nome', scheme: scheme, text: text),
+                              const SizedBox(height: 14),
+                              _FieldLine(label: 'Turma', scheme: scheme, text: text),
                             ],
                           ),
                         ),
@@ -91,47 +75,31 @@ class _FolhaRespostasPageState extends ConsumerState<FolhaRespostasPage> {
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
                                 color: scheme.surfaceContainerLowest,
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: scheme.outline),
                               ),
-                              child: QrImageView(
-                                data: qrPayload,
-                                size: 96,
-                              ),
+                              child: QrImageView(data: qrPayload, size: 96),
                             ),
                             const SizedBox(height: 4),
-                            Text(
-                              'QR mock',
-                              style: text.labelSmall?.copyWith(
-                                color: scheme.onSurfaceVariant,
-                              ),
-                            ),
+                            Text('QR mock',
+                                style: text.labelSmall?.copyWith(
+                                    color: scheme.onSurfaceVariant)),
                           ],
                         ),
                       ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 4),
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   child: Text(
                     'N2: identificador real do QR Code',
                     textAlign: TextAlign.center,
-                    style: text.bodySmall?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
+                    style: text.bodySmall
+                        ?.copyWith(color: scheme.onSurfaceVariant),
                   ),
                 ),
-                const SizedBox(height: 8),
-
-                // Grade de respostas estilo "cartão de leitura óptica"
                 Card(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: scheme.outlineVariant),
-                  ),
                   clipBehavior: Clip.antiAlias,
                   child: Column(
                     children: List<Widget>.generate(quantidade, (int index) {
@@ -141,17 +109,14 @@ class _FolhaRespostasPageState extends ConsumerState<FolhaRespostasPage> {
                             ? scheme.surfaceContainerLowest
                             : scheme.surfaceContainerLow,
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
-                        ),
+                            horizontal: 16, vertical: 10),
                         child: Row(
                           children: <Widget>[
                             SizedBox(
                               width: 28,
-                              child: Text(
-                                '${index + 1}',
-                                style: text.labelLarge,
-                              ),
+                              child: Text('${index + 1}',
+                                  style: text.labelLarge?.copyWith(
+                                      fontWeight: FontWeight.w700)),
                             ),
                             ...labels.map(
                               (String label) => Padding(
@@ -162,15 +127,11 @@ class _FolhaRespostasPageState extends ConsumerState<FolhaRespostasPage> {
                                   alignment: Alignment.center,
                                   decoration: BoxDecoration(
                                     border: Border.all(
-                                      color: scheme.outline,
-                                      width: 1.4,
-                                    ),
+                                        color: scheme.outline, width: 1.4),
                                     shape: BoxShape.circle,
                                   ),
-                                  child: Text(
-                                    label,
-                                    style: text.bodyMedium,
-                                  ),
+                                  child:
+                                      Text(label, style: text.bodyMedium),
                                 ),
                               ),
                             ),
@@ -182,6 +143,33 @@ class _FolhaRespostasPageState extends ConsumerState<FolhaRespostasPage> {
                 ),
               ],
             ),
+    );
+  }
+}
+
+class _FieldLine extends StatelessWidget {
+  const _FieldLine({
+    required this.label,
+    required this.scheme,
+    required this.text,
+  });
+
+  final String label;
+  final ColorScheme scheme;
+  final TextTheme text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text('$label:', style: text.bodySmall),
+        Container(
+          margin: const EdgeInsets.only(top: 6),
+          height: 1,
+          color: scheme.outlineVariant,
+        ),
+      ],
     );
   }
 }

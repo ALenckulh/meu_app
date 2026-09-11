@@ -68,6 +68,9 @@ class _ProvaQuestoesPageState extends ConsumerState<ProvaQuestoesPage> {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(_prova?.titulo ?? 'Questões da prova'),
@@ -76,7 +79,7 @@ class _ProvaQuestoesPageState extends ConsumerState<ProvaQuestoesPage> {
             message: 'Salvar ordem',
             child: IconButton(
               key: const Key('btn-salvar-ordem'),
-              icon: const Icon(Icons.save),
+              icon: const Icon(Icons.save_outlined),
               onPressed: _salvarOrdem,
             ),
           ),
@@ -86,18 +89,35 @@ class _ProvaQuestoesPageState extends ConsumerState<ProvaQuestoesPage> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: <Widget>[
-                Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Text(
-                    'Arraste para alterar a ordem das questões.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: colors.secondaryContainer,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    children: <Widget>[
+                      Icon(Icons.drag_indicator,
+                          size: 18, color: colors.onSecondaryContainer),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Arraste as questões para definir a ordem na prova.',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.onSecondaryContainer,
+                          ),
                         ),
+                      ),
+                    ],
                   ),
                 ),
                 Expanded(
                   child: ReorderableListView.builder(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                     itemCount: _ordenadas.length,
+                    buildDefaultDragHandles: false,
                     onReorderItem: (int oldIndex, int newIndex) {
                       setState(() {
                         final Questao item = _ordenadas.removeAt(oldIndex);
@@ -106,38 +126,99 @@ class _ProvaQuestoesPageState extends ConsumerState<ProvaQuestoesPage> {
                     },
                     itemBuilder: (BuildContext context, int index) {
                       final Questao q = _ordenadas[index];
-                      return ListTile(
+                      return Padding(
                         key: ValueKey<String>(q.id),
-                        leading: Text('${index + 1}.'),
-                        title: Text(q.enunciado, maxLines: 2),
-                        trailing: const Icon(Icons.drag_handle),
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: colors.surfaceContainerLowest,
+                            borderRadius: BorderRadius.circular(18),
+                            boxShadow: <BoxShadow>[
+                              BoxShadow(
+                                color:
+                                    colors.primary.withValues(alpha: 0.08),
+                                blurRadius: 14,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 12),
+                          child: Row(
+                            children: <Widget>[
+                              CircleAvatar(
+                                radius: 15,
+                                backgroundColor: colors.primaryContainer,
+                                child: Text(
+                                  '${index + 1}',
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    color: colors.onPrimaryContainer,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  q.enunciado,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.bodyMedium,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              ReorderableDragStartListener(
+                                index: index,
+                                child: Tooltip(
+                                  message: 'Arrastar para reordenar',
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(4),
+                                    child: Icon(Icons.drag_indicator,
+                                        color: colors.onSurfaceVariant),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       );
                     },
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: <Widget>[
-                      FilledButton(
-                        key: const Key('btn-ir-variacoes'),
-                        onPressed: () async {
-                          await _salvarOrdem();
-                          if (context.mounted) {
-                            context.push('/provas/${widget.provaId}/variacoes');
-                          }
-                        },
-                        child: const Text('Configurar variações'),
-                      ),
-                      const SizedBox(height: 8),
-                      OutlinedButton(
-                        key: const Key('btn-ir-gerar'),
-                        onPressed: () =>
-                            context.push('/provas/${widget.provaId}/gerar'),
-                        child: const Text('Prévia de geração'),
-                      ),
-                    ],
+                Container(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                  decoration: BoxDecoration(
+                    color: colors.surface,
+                    border:
+                        Border(top: BorderSide(color: colors.outlineVariant)),
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        FilledButton.icon(
+                          key: const Key('btn-ir-variacoes'),
+                          onPressed: () async {
+                            await _salvarOrdem();
+                            if (context.mounted) {
+                              context.push(
+                                  '/provas/${widget.provaId}/variacoes');
+                            }
+                          },
+                          icon: const Icon(Icons.shuffle),
+                          label: const Text('Configurar variações'),
+                        ),
+                        const SizedBox(height: 8),
+                        OutlinedButton.icon(
+                          key: const Key('btn-ir-gerar'),
+                          onPressed: () => context
+                              .push('/provas/${widget.provaId}/gerar'),
+                          icon: const Icon(Icons.print_outlined),
+                          label: const Text('Prévia de geração'),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],

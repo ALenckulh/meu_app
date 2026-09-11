@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meu_app/core/di/providers.dart';
+import 'package:meu_app/core/widgets/info_card.dart';
 import 'package:meu_app/shared/models/prova.dart';
 import 'package:meu_app/shared/models/questao.dart';
 
@@ -46,8 +47,9 @@ class _GerarProvaPageState extends ConsumerState<GerarProvaPage> {
   @override
   Widget build(BuildContext context) {
     const List<String> labels = <String>['A', 'B', 'C', 'D'];
-    final ColorScheme scheme = Theme.of(context).colorScheme;
-    final TextTheme text = Theme.of(context).textTheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+    final TextTheme text = theme.textTheme;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Prévia da prova')),
@@ -56,54 +58,17 @@ class _GerarProvaPageState extends ConsumerState<GerarProvaPage> {
           : ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
               children: <Widget>[
-                // Cabeçalho da prova
-                Card(
-                  elevation: 0,
-                  color: scheme.primaryContainer,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        Text(
-                          _prova?.titulo ?? '',
-                          style: text.headlineSmall?.copyWith(
-                            color: scheme.onPrimaryContainer,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: <Widget>[
-                            Icon(
-                              Icons.help_outline,
-                              size: 16,
-                              color: scheme.onPrimaryContainer,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${_questoes.length} questões · Visualização antes da impressão (mock N1)',
-                              style: text.bodySmall?.copyWith(
-                                color: scheme.onPrimaryContainer,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                InfoCard(
+                  icon: Icons.description_outlined,
+                  title: _prova?.titulo ?? '',
+                  subtitle:
+                      '${_questoes.length} questões · visualização antes da impressão (mock N1)',
                 ),
                 const SizedBox(height: 16),
-
-                // Lista de questões
                 ...List<Widget>.generate(_questoes.length, (int index) {
                   final Questao q = _questoes[index];
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      side: BorderSide(color: scheme.outlineVariant),
-                    ),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Column(
@@ -114,20 +79,19 @@ class _GerarProvaPageState extends ConsumerState<GerarProvaPage> {
                             children: <Widget>[
                               CircleAvatar(
                                 radius: 14,
-                                backgroundColor: scheme.secondaryContainer,
+                                backgroundColor: scheme.primaryContainer,
                                 child: Text(
                                   '${index + 1}',
                                   style: text.labelLarge?.copyWith(
-                                    color: scheme.onSecondaryContainer,
+                                    color: scheme.onPrimaryContainer,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
-                                child: Text(
-                                  q.enunciado,
-                                  style: text.titleMedium,
-                                ),
+                                child:
+                                    Text(q.enunciado, style: text.titleMedium),
                               ),
                             ],
                           ),
@@ -135,33 +99,30 @@ class _GerarProvaPageState extends ConsumerState<GerarProvaPage> {
                           ...List<Widget>.generate(4, (int i) {
                             return Padding(
                               padding: const EdgeInsets.only(
-                                left: 40,
-                                bottom: 6,
-                              ),
+                                  left: 40, bottom: 6),
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: <Widget>[
                                   Container(
-                                    width: 22,
-                                    height: 22,
+                                    width: 26,
+                                    height: 26,
                                     alignment: Alignment.center,
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: scheme.outline,
-                                      ),
+                                      color: scheme.surfaceContainerHigh,
                                     ),
                                     child: Text(
                                       labels[i],
-                                      style: text.labelSmall,
+                                      style: text.labelSmall?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        color: scheme.onSurfaceVariant,
+                                      ),
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
+                                  const SizedBox(width: 10),
                                   Expanded(
-                                    child: Text(
-                                      q.alternativas[i],
-                                      style: text.bodyMedium,
-                                    ),
+                                    child: Text(q.alternativas[i],
+                                        style: text.bodyMedium),
                                   ),
                                 ],
                               ),
@@ -172,13 +133,12 @@ class _GerarProvaPageState extends ConsumerState<GerarProvaPage> {
                     ),
                   );
                 }),
-
                 const SizedBox(height: 8),
                 FilledButton.icon(
                   key: const Key('btn-folha-respostas'),
                   onPressed: () =>
                       context.push('/provas/${widget.provaId}/folha'),
-                  icon: const Icon(Icons.description_outlined),
+                  icon: const Icon(Icons.grid_on_outlined),
                   label: const Text('Prévia da folha de respostas'),
                 ),
                 const SizedBox(height: 8),

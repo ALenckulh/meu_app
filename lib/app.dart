@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meu_app/core/router/app_router.dart';
+import 'package:meu_app/core/theme/app_gradients.dart';
 import 'package:meu_app/core/theme/material_theme.dart';
 import 'package:meu_app/l10n/app_localizations.dart';
 
@@ -31,6 +32,14 @@ class AppCorrecaoApp extends ConsumerWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       routerConfig: router,
+      builder: (BuildContext context, Widget? child) {
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: AppGradients.background(Theme.of(context).colorScheme),
+          ),
+          child: child,
+        );
+      },
     );
   }
 }
