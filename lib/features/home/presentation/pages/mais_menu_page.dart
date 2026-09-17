@@ -9,29 +9,96 @@ class MaisMenuPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Mais')),
       body: ListView(
+        padding: const EdgeInsets.all(16),
         children: <Widget>[
-          ListTile(
-            key: const Key('item-correcao'),
-            leading: const Icon(Icons.camera_alt),
-            title: const Text('Corrigir prova'),
-            subtitle: const Text('Simular leitura de QR e respostas'),
+          _MaisMenuTile(
+            keyName: 'item-correcao',
+            icon: Icons.camera_alt,
+            title: 'Corrigir prova',
+            subtitle: 'Simular leitura de QR e respostas',
             onTap: () => context.push('/mais/correcao'),
           ),
-          ListTile(
-            key: const Key('item-resultados'),
-            leading: const Icon(Icons.bar_chart),
-            title: const Text('Resultados'),
-            subtitle: const Text('Notas e estatísticas mockadas'),
+          const SizedBox(height: 10),
+          _MaisMenuTile(
+            keyName: 'item-resultados',
+            icon: Icons.bar_chart,
+            title: 'Resultados',
+            subtitle: 'Notas e estatísticas mockadas',
             onTap: () => context.push('/mais/resultados'),
           ),
-          ListTile(
-            key: const Key('item-estatisticas'),
-            leading: const Icon(Icons.analytics),
-            title: const Text('Estatísticas'),
-            subtitle: const Text('Gráfico de desempenho'),
+          const SizedBox(height: 10),
+          _MaisMenuTile(
+            keyName: 'item-estatisticas',
+            icon: Icons.analytics,
+            title: 'Estatísticas',
+            subtitle: 'Gráfico de desempenho',
             onTap: () => context.push('/mais/estatisticas'),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _MaisMenuTile extends StatelessWidget {
+  const _MaisMenuTile({
+    required this.keyName,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final String keyName;
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme colors = Theme.of(context).colorScheme;
+    return Material(
+      color: colors.surfaceContainerHigh,
+      borderRadius: BorderRadius.circular(20),
+      elevation: 1.5,
+      shadowColor: colors.shadow.withValues(alpha: 0.15),
+      child: InkWell(
+        key: Key(keyName),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: <Widget>[
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: colors.tertiaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: colors.onTertiaryContainer),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right, color: colors.outline),
+            ],
+          ),
+        ),
       ),
     );
   }

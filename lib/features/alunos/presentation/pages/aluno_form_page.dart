@@ -88,43 +88,55 @@ class _AlunoFormPageState extends ConsumerState<AlunoFormPage> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  children: <Widget>[
-                    TextFormField(
-                      key: const Key('input-aluno-nome'),
-                      controller: _nomeController,
-                      decoration: const InputDecoration(
-                        labelText: 'Nome',
-                        hintText: 'Informe o nome do aluno',
-                        helperText: 'Nome completo do aluno.',
-                      ),
-                      validator: (String? v) =>
-                          (v == null || v.isEmpty) ? 'Informe o nome' : null,
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        TextFormField(
+                          key: const Key('input-aluno-nome'),
+                          controller: _nomeController,
+                          decoration: const InputDecoration(
+                            labelText: 'Nome',
+                            hintText: 'Informe o nome do aluno',
+                            helperText: 'Nome completo do aluno.',
+                            prefixIcon: Icon(Icons.person_outline),
+                          ),
+                          validator: (String? v) =>
+                              (v == null || v.isEmpty) ? 'Informe o nome' : null,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          key: const Key('input-aluno-matricula'),
+                          controller: _matriculaController,
+                          decoration: const InputDecoration(
+                            labelText: 'Matrícula',
+                            hintText: 'Informe a matrícula',
+                            helperText: 'Identificador único do aluno na turma.',
+                            prefixIcon: Icon(Icons.badge_outlined),
+                          ),
+                          validator: (String? v) => (v == null || v.isEmpty)
+                              ? 'Informe a matrícula'
+                              : null,
+                        ),
+                        const SizedBox(height: 28),
+                        FilledButton(
+                          key: const Key('btn-salvar-aluno'),
+                          onPressed: _save,
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: const StadiumBorder(),
+                          ),
+                          child: const Text('Salvar'),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      key: const Key('input-aluno-matricula'),
-                      controller: _matriculaController,
-                      decoration: const InputDecoration(
-                        labelText: 'Matrícula',
-                        hintText: 'Informe a matrícula',
-                        helperText: 'Identificador único do aluno na turma.',
-                      ),
-                      validator: (String? v) => (v == null || v.isEmpty)
-                          ? 'Informe a matrícula'
-                          : null,
-                    ),
-                    const SizedBox(height: 24),
-                    FilledButton(
-                      key: const Key('btn-salvar-aluno'),
-                      onPressed: _save,
-                      child: const Text('Salvar'),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
