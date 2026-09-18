@@ -66,50 +66,80 @@ class TurmaDetailPage extends ConsumerWidget {
               icon: Icons.person_off_outlined,
             );
           }
-          return ListView.builder(
+          final ColorScheme colors = Theme.of(context).colorScheme;
+          return ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
             itemCount: alunos.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (BuildContext context, int index) {
               final Aluno aluno = alunos[index];
-              return ListTile(
+              return Material(
                 key: Key('aluno-${aluno.id}'),
-                title: Text(aluno.nome),
-                subtitle: Text('Matrícula: ${aluno.matricula}'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Tooltip(
-                      message: 'Editar',
-                      child: IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () => context
-                            .push('/turmas/$turmaId/alunos/${aluno.id}/editar'),
+                color: colors.surfaceContainerHigh,
+                borderRadius: BorderRadius.circular(20),
+                elevation: 1.5,
+                shadowColor: colors.shadow.withValues(alpha: 0.15),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 4, 4),
+                  child: Row(
+                    children: <Widget>[
+                      CircleAvatar(
+                        backgroundColor: colors.tertiaryContainer,
+                        foregroundColor: colors.onTertiaryContainer,
+                        child: Text(
+                          aluno.nome.isNotEmpty ? aluno.nome[0].toUpperCase() : '?',
+                        ),
                       ),
-                    ),
-                    Tooltip(
-                      message: 'Excluir',
-                      child: IconButton(
-                        icon: const Icon(Icons.delete_outline),
-                        onPressed: () async {
-                          final bool ok = await showConfirmDeleteDialog(
-                            context: context,
-                            title: 'Excluir aluno "${aluno.nome}"?',
-                            message:
-                                'O aluno será removido da turma. Esta ação não pode ser desfeita.',
-                          );
-                          if (!ok) {
-                            return;
-                          }
-                          await ref
-                              .read(alunoRepositoryProvider)
-                              .delete(aluno.id);
-                          ref.read(listVersionProvider.notifier).bump();
-                          if (context.mounted) {
-                            showSuccessSnackBar(context, 'Aluno excluído.');
-                          }
-                        },
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Text(aluno.nome, style: const TextStyle(fontWeight: FontWeight.w500)),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Matrícula: ${aluno.matricula}',
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: colors.onSurfaceVariant,
+                                  ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+                      Tooltip(
+                        message: 'Editar',
+                        child: IconButton(
+                          icon: const Icon(Icons.edit_outlined),
+                          onPressed: () => context
+                              .push('/turmas/$turmaId/alunos/${aluno.id}/editar'),
+                        ),
+                      ),
+                      Tooltip(
+                        message: 'Excluir',
+                        child: IconButton(
+                          icon: const Icon(Icons.delete_outline),
+                          onPressed: () async {
+                            final bool ok = await showConfirmDeleteDialog(
+                              context: context,
+                              title: 'Excluir aluno "${aluno.nome}"?',
+                              message:
+                                  'O aluno será removido da turma. Esta ação não pode ser desfeita.',
+                            );
+                            if (!ok) {
+                              return;
+                            }
+                            await ref
+                                .read(alunoRepositoryProvider)
+                                .delete(aluno.id);
+                            ref.read(listVersionProvider.notifier).bump();
+                            if (context.mounted) {
+                              showSuccessSnackBar(context, 'Aluno excluído.');
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             },
