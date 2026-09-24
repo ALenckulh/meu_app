@@ -1,5 +1,5 @@
 {
-  "buildCommand": "flutter build web --release",
+  "buildCommand": "bash scripts/build.sh",
   "outputDirectory": "build/web",
   "rewrites": [
     {
