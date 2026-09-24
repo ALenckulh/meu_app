@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:meu_app/core/theme/app_semantic_colors.dart';
 
-/// Tema do app — paleta violeta sobre fundo creme, cantos generosos,
-/// botões em formato pílula e cards brancos com sombra suave.
+/// Tema do app — paleta violeta com acento verde-azulado (teal), cantos
+/// generosos, botões em formato pílula e cards brancos com sombra suave.
+///
+/// Papéis de cor:
+/// - primary: violeta (identidade da marca)
+/// - secondary: lavanda acinzentada (apoio discreto, derivada do violeta)
+/// - tertiary: verde-azulado (acento de contraste ao violeta)
+/// - error: vermelho
 class MaterialTheme {
   final TextTheme textTheme;
 
@@ -11,19 +17,23 @@ class MaterialTheme {
   static ColorScheme lightScheme() {
     return const ColorScheme(
       brightness: Brightness.light,
+      // Violeta — mantido
       primary: Color(0xff5b4be0),
       onPrimary: Color(0xffffffff),
       primaryContainer: Color(0xffe7e2ff),
       onPrimaryContainer: Color(0xff1b1147),
-      secondary: Color(0xff3f6fe5),
+      // Lavanda acinzentada — apoio que não compete com o primário
+      secondary: Color(0xff625b87),
       onSecondary: Color(0xffffffff),
-      secondaryContainer: Color(0xffdee6ff),
-      onSecondaryContainer: Color(0xff0a1f52),
-      tertiary: Color(0xffe9673c),
+      secondaryContainer: Color(0xffe8e3f8),
+      onSecondaryContainer: Color(0xff1e1a3d),
+      // Verde-azulado — acento de contraste ao violeta
+      tertiary: Color(0xff007f6d),
       onTertiary: Color(0xffffffff),
-      tertiaryContainer: Color(0xffffe1d4),
-      onTertiaryContainer: Color(0xff5a1b06),
-      error: Color(0xffd64550),
+      tertiaryContainer: Color(0xffc5f1e6),
+      onTertiaryContainer: Color(0xff00201a),
+      // Vermelho — levemente escurecido para atingir contraste AA com branco
+      error: Color(0xffc93a47),
       onError: Color(0xffffffff),
       errorContainer: Color(0xffffe1e1),
       onErrorContainer: Color(0xff5a1015),
@@ -59,16 +69,16 @@ class MaterialTheme {
       onPrimary: Color(0xff2a1d66),
       primaryContainer: Color(0xff42359c),
       onPrimaryContainer: Color(0xffe7e2ff),
-      secondary: Color(0xffb4c6ff),
-      onSecondary: Color(0xff10275a),
-      secondaryContainer: Color(0xff2b3f74),
-      onSecondaryContainer: Color(0xffdee6ff),
-      tertiary: Color(0xffffb59b),
-      onTertiary: Color(0xff5a1b06),
-      tertiaryContainer: Color(0xff7a3420),
-      onTertiaryContainer: Color(0xffffe1d4),
+      secondary: Color(0xffcbc3ec),
+      onSecondary: Color(0xff332d55),
+      secondaryContainer: Color(0xff4a436e),
+      onSecondaryContainer: Color(0xffe8e3f8),
+      tertiary: Color(0xff6fdac3),
+      onTertiary: Color(0xff00382f),
+      tertiaryContainer: Color(0xff005144),
+      onTertiaryContainer: Color(0xffc5f1e6),
       error: Color(0xffffb3b6),
-      onError: Color(0xff5a1015),
+      onError: Color(0xff680014),
       errorContainer: Color(0xff8c2f37),
       onErrorContainer: Color(0xffffe1e1),
       surface: Color(0xff151319),
@@ -140,7 +150,7 @@ class MaterialTheme {
         margin: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
         shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       ),
       listTileTheme: ListTileThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -174,7 +184,7 @@ class MaterialTheme {
         enabledBorder: inputBorder(colorScheme.outlineVariant),
         focusedBorder: inputBorder(colorScheme.primary, 2),
         contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
@@ -212,11 +222,11 @@ class MaterialTheme {
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       dialogTheme: DialogThemeData(
         shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+        RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       ),
     );
   }
