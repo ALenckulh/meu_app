@@ -36,7 +36,9 @@ class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colors = Theme.of(context).colorScheme;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Corrigir prova')),
       body: Padding(
@@ -47,42 +49,66 @@ class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: colors.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: colors.outlineVariant),
+                  color: colors.surfaceContainerLowest,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: _scanning ? colors.primary : colors.outlineVariant,
+                    width: _scanning ? 2 : 1.5,
+                  ),
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: <Widget>[
-                    Icon(
-                      Icons.camera_alt,
-                      size: 72,
-                      color: colors.onSurfaceVariant,
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: colors.primary.withValues(alpha: 0.12),
+                      ),
+                      child: _scanning
+                          ? SizedBox(
+                              width: 40,
+                              height: 40,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 3,
+                                color: colors.primary,
+                              ),
+                            )
+                          : Icon(Icons.qr_code_scanner,
+                              size: 40, color: colors.primary),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Text(
                       _scanning
                           ? 'Lendo QR e respostas...'
                           : 'Área da câmera (simulada)',
-                      style: Theme.of(context).textTheme.titleMedium,
+                      style: theme.textTheme.titleMedium,
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'N2: câmera real + detecção de QR',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
+                    const SizedBox(height: 6),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Text(
+                        'N2: câmera real + detecção de QR e marcações',
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: colors.onSurfaceVariant),
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            FilledButton.icon(
-              key: const Key('btn-simular-leitura'),
-              onPressed: _scanning ? null : _simular,
-              icon: const Icon(Icons.qr_code_scanner),
-              label: Text(_scanning ? 'Processando...' : 'Simular leitura'),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                key: const Key('btn-simular-leitura'),
+                onPressed: _scanning ? null : _simular,
+                icon: Icon(_scanning
+                    ? Icons.hourglass_bottom
+                    : Icons.document_scanner_outlined),
+                label: Text(_scanning ? 'Processando...' : 'Simular leitura'),
+              ),
             ),
           ],
         ),

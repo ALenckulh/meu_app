@@ -88,92 +88,126 @@ class _QuestaoFormPageState extends ConsumerState<QuestaoFormPage> {
   @override
   Widget build(BuildContext context) {
     const List<String> labels = <String>['A', 'B', 'C', 'D'];
+    final ColorScheme colors = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEdit ? 'Editar questão' : 'Cadastrar questão'),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: <Widget>[
-                    if (_error != null) ...<Widget>[
-                      FormErrorBanner(
-                        message: _error!,
-                        onClose: () => setState(() => _error = null),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                    TextFormField(
-                      key: const Key('input-enunciado'),
-                      controller: _enunciadoController,
-                      maxLines: 3,
-                      decoration: const InputDecoration(
-                        labelText: 'Enunciado',
-                        hintText: 'Informe o enunciado da questão',
-                        helperText: 'Texto principal da pergunta.',
-                      ),
-                      validator: (String? v) =>
-                          (v == null || v.isEmpty) ? 'Informe o enunciado' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Alternativas',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    RadioGroup<int>(
-                      groupValue: _gabarito,
-                      onChanged: (int? v) {
-                        if (v != null) {
-                          setState(() => _gabarito = v);
-                        }
-                      },
-                      child: Column(
-                        children: List<Widget>.generate(4, (int i) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Row(
-                              children: <Widget>[
-                                Radio<int>(
-                                  key: Key('radio-gabarito-$i'),
-                                  value: i,
-                                ),
-                                Expanded(
-                                  child: TextFormField(
-                                    key: Key('input-alternativa-$i'),
-                                    controller: _altControllers[i],
-                                    decoration: InputDecoration(
-                                      labelText: 'Alternativa ${labels[i]}',
-                                      hintText:
-                                          'Informe a alternativa ${labels[i]}',
-                                      helperText: i == _gabarito
-                                          ? 'Marcada como gabarito'
-                                          : 'Selecione o rádio para definir o gabarito',
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: <Widget>[
+                        if (_error != null) ...<Widget>[
+                          FormErrorBanner(
+                            message: _error!,
+                            onClose: () => setState(() => _error = null),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        TextFormField(
+                          key: const Key('input-enunciado'),
+                          controller: _enunciadoController,
+                          maxLines: 3,
+                          decoration: const InputDecoration(
+                            labelText: 'Enunciado',
+                            hintText: 'Informe o enunciado da questão',
+                            helperText: 'Texto principal da pergunta.',
+                            alignLabelWithHint: true,
+                            prefixIcon: Icon(Icons.help_outline),
+                          ),
+                          validator: (String? v) =>
+                              (v == null || v.isEmpty) ? 'Informe o enunciado' : null,
+                        ),
+                        const SizedBox(height: 20),
+                        Text(
+                          'Alternativas',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Selecione o rádio para marcar a alternativa correta.',
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: colors.onSurfaceVariant,
+                              ),
+                        ),
+                        const SizedBox(height: 10),
+                        RadioGroup<int>(
+                          groupValue: _gabarito,
+                          onChanged: (int? v) {
+                            if (v != null) {
+                              setState(() => _gabarito = v);
+                            }
+                          },
+                          child: Column(
+                            children: List<Widget>.generate(4, (int i) {
+                              final bool isCorrect = i == _gabarito;
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: Material(
+                                  color: isCorrect
+                                      ? colors.primaryContainer.withValues(alpha: 0.55)
+                                      : colors.surfaceContainerHigh,
+                                  borderRadius: BorderRadius.circular(18),
+                                  elevation: 1,
+                                  shadowColor: colors.shadow.withValues(alpha: 0.12),
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(right: 12),
+                                    child: Row(
+                                      children: <Widget>[
+                                        Radio<int>(
+                                          key: Key('radio-gabarito-$i'),
+                                          value: i,
+                                        ),
+                                        Expanded(
+                                          child: TextFormField(
+                                            key: Key('input-alternativa-$i'),
+                                            controller: _altControllers[i],
+                                            decoration: InputDecoration(
+                                              border: InputBorder.none,
+                                              labelText: 'Alternativa ${labels[i]}',
+                                              hintText:
+                                                  'Informe a alternativa ${labels[i]}',
+                                              helperText: isCorrect
+                                                  ? 'Marcada como gabarito'
+                                                  : null,
+                                            ),
+                                            validator: (String? v) =>
+                                                (v == null || v.isEmpty)
+                                                    ? 'Informe a alternativa'
+                                                    : null,
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    validator: (String? v) =>
-                                        (v == null || v.isEmpty)
-                                            ? 'Informe a alternativa'
-                                            : null,
                                   ),
                                 ),
-                              ],
-                            ),
-                          );
-                        }),
-                      ),
+                              );
+                            }),
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+                        FilledButton(
+                          key: const Key('btn-salvar-questao'),
+                          onPressed: _save,
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: const StadiumBorder(),
+                          ),
+                          child: const Text('Salvar'),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 16),
-                    FilledButton(
-                      key: const Key('btn-salvar-questao'),
-                      onPressed: _save,
-                      child: const Text('Salvar'),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),

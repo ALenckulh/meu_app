@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:meu_app/core/theme/app_semantic_colors.dart';
 
 enum StatusKind { error, warning, success, info }
 
@@ -25,16 +26,17 @@ class StatusIcon extends StatelessWidget {
     }
   }
 
-  Color _color(ColorScheme scheme) {
+  Color _color(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
     switch (kind) {
       case StatusKind.error:
         return scheme.error;
       case StatusKind.warning:
         return scheme.tertiary;
       case StatusKind.success:
-        return scheme.primary;
+        return context.semantic.success;
       case StatusKind.info:
-        return scheme.secondary;
+        return context.semantic.info;
     }
   }
 
@@ -42,7 +44,7 @@ class StatusIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
-      child: Icon(_icon, color: _color(Theme.of(context).colorScheme)),
+      child: Icon(_icon, color: _color(context)),
     );
   }
 }
