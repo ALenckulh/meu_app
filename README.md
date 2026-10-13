@@ -16,6 +16,7 @@ Login mock: `ana@escola.com` / `123456`
 - [docs/ARQUITETURA.md](docs/ARQUITETURA.md)
 - [docs/NORMAS-UX.md](docs/NORMAS-UX.md)
 - [docs/ENTREGAS.md](docs/ENTREGAS.md)
+- [Vídeo demonstrativo do sistema](https://www.youtube.com/watch?v=Y0RQv2h-qpc)
 
 ## Escopo N1
 
