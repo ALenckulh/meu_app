@@ -14,9 +14,9 @@ class LoginPage extends ConsumerStatefulWidget {
 class _LoginPageState extends ConsumerState<LoginPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController =
-      TextEditingController(text: 'ana@escola.com');
+      TextEditingController(text: '');
   final TextEditingController _senhaController =
-      TextEditingController(text: '123456');
+      TextEditingController(text: '');
   String? _error;
   bool _loading = false;
 
@@ -71,7 +71,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'N1 — protótipo com dados mockados',
+                      'N2 — protótipo integrado com banco de dados',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
