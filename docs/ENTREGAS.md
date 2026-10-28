@@ -15,10 +15,11 @@
 
 - [ ] Firebase Auth + Firestore
 - [ ] CRUD real turmas/alunos/questões/provas
-- [ ] Importação CSV real
+- [x] Importação CSV real (`file_picker` + `CsvAlunosParser`, prévia com validação)
 - [ ] Variações reais + remapeamento de gabarito persistido
-- [ ] PDF + QR real
-- [ ] Câmera + leitura QR/folha
+- [x] PDF + QR real (`pdf`/`printing`: prova geral, folha geral, prova+folha por aluno e da turma inteira; QR `CPROVA|v1|p=..|v=..|a=..`)
+- [x] Câmera + leitura do QR (`mobile_scanner`) — identifica prova, variação e aluno
+- [ ] Leitura das marcações da folha (ainda simulada)
 - [ ] Correções e estatísticas reais
 
 ## N3 — Completo e validado (pendente)
