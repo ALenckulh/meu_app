@@ -20,6 +20,11 @@ dependencies:
   intl: any
   firebase_core: ^5.0.0
   firebase_auth: ^7.0.0
+  # N2 — importação CSV, PDF/QR e leitura de QR pela câmera
+  file_picker: ^13.3.0
+  pdf: ^3.11.3
+  printing: ^5.15.1
+  mobile_scanner: ^7.4.2
 
 dev_dependencies:
   flutter_test:

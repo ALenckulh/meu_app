@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meu_app/core/di/providers.dart';
 import 'package:meu_app/core/widgets/info_card.dart';
+import 'package:meu_app/core/widgets/section_header.dart';
+import 'package:meu_app/features/geracao/data/prova_pdf_service.dart';
+import 'package:meu_app/features/geracao/presentation/widgets/pdf_acoes.dart';
 import 'package:meu_app/shared/models/prova.dart';
 import 'package:meu_app/shared/models/questao.dart';
 
@@ -18,6 +21,7 @@ class GerarProvaPage extends ConsumerStatefulWidget {
 class _GerarProvaPageState extends ConsumerState<GerarProvaPage> {
   Prova? _prova;
   List<Questao> _questoes = <Questao>[];
+  Map<String, Questao> _banco = <String, Questao>{};
   bool _loading = true;
 
   @override
@@ -35,6 +39,7 @@ class _GerarProvaPageState extends ConsumerState<GerarProvaPage> {
       for (final Questao q in todas) q.id: q,
     };
     _prova = prova;
+    _banco = map;
     _questoes = (prova?.questaoIds ?? <String>[])
         .map((String id) => map[id])
         .whereType<Questao>()
@@ -62,7 +67,7 @@ class _GerarProvaPageState extends ConsumerState<GerarProvaPage> {
                   icon: Icons.description_outlined,
                   title: _prova?.titulo ?? '',
                   subtitle:
-                      '${_questoes.length} questões · visualização antes da impressão (mock N1)',
+                      '${_questoes.length} questões · versão geral (mesma ordem para a turma)',
                 ),
                 const SizedBox(height: 16),
                 ...List<Widget>.generate(_questoes.length, (int index) {
@@ -133,8 +138,20 @@ class _GerarProvaPageState extends ConsumerState<GerarProvaPage> {
                     ),
                   );
                 }),
-                const SizedBox(height: 8),
-                FilledButton.icon(
+                const SectionHeader('Imprimir versão geral'),
+                PdfAcoes(
+                  nomeArquivo: _prova?.titulo ?? 'prova',
+                  rotuloImprimir: 'Imprimir prova + folha (PDF)',
+                  habilitado: _prova != null && _questoes.isNotEmpty,
+                  gerar: () => const ProvaPdfService().gerar(
+                    prova: _prova!,
+                    copias: <CopiaProva>[
+                      CopiaProva.geral(prova: _prova!, banco: _banco),
+                    ],
+                  ),
+                ),
+                const SectionHeader('Outras opções'),
+                OutlinedButton.icon(
                   key: const Key('btn-folha-respostas'),
                   onPressed: () =>
                       context.push('/provas/${widget.provaId}/folha'),
