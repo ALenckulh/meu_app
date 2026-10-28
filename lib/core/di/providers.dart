@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meu_app/core/data/app_mock_store.dart';
 import 'package:meu_app/features/alunos/data/repositories/aluno_mock_repository.dart';
 import 'package:meu_app/features/alunos/domain/repositories/aluno_repository.dart';
-import 'package:meu_app/features/auth/data/repositories/auth_mock_repository.dart';
+import 'package:meu_app/features/auth/data/repositories/firebase_auth_repository.dart';
 import 'package:meu_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:meu_app/features/correcao/data/repositories/correcao_mock_repository.dart';
 import 'package:meu_app/features/correcao/domain/repositories/correcao_repository.dart';
@@ -19,7 +19,7 @@ final appMockStoreProvider = Provider<AppMockStore>((Ref ref) {
 });
 
 final authRepositoryProvider = Provider<AuthRepository>((Ref ref) {
-  return AuthMockRepository(ref.watch(appMockStoreProvider));
+  return FirebaseAuthRepository();
 });
 
 final turmaRepositoryProvider = Provider<TurmaRepository>((Ref ref) {

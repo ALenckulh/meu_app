@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -46,6 +47,30 @@ class _CadastroPageState extends ConsumerState<CadastroPage> {
       }
       showSuccessSnackBar(context, 'Conta criada com sucesso.');
       context.go('/login');
+    } on FirebaseAuthException catch (e) {
+      String msg = 'Não foi possível criar a conta.';
+      switch (e.code) {
+        case 'email-already-in-use':
+          msg = 'Este e-mail já está em uso por outra conta.';
+          break;
+        case 'invalid-email':
+          msg = 'O formato do e-mail é inválido.';
+          break;
+        case 'weak-password':
+          msg = 'A senha informada é muito fraca (mínimo de 6 caracteres).';
+          break;
+        case 'operation-not-allowed':
+          msg = 'O provedor de e-mail e senha não está ativado no Firebase Console.';
+          break;
+        case 'network-request-failed':
+          msg = 'Falha de conexão. Verifique sua internet.';
+          break;
+        default:
+          if (e.message != null && e.message!.isNotEmpty) {
+            msg = e.message!;
+          }
+      }
+      setState(() => _error = msg);
     } catch (_) {
       setState(() => _error = 'Não foi possível criar a conta.');
     } finally {
