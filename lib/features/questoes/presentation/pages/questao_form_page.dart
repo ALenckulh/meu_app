@@ -63,11 +63,24 @@ class _QuestaoFormPageState extends ConsumerState<QuestaoFormPage> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
+    final String? professorId = ref.read(authSessionProvider)?.id;
+    if (professorId == null) {
+      setState(() => _error = 'Sessão inválida. Faça login novamente.');
+      return;
+    }
+    Questao? existing;
+    if (_isEdit) {
+      existing =
+          await ref.read(questaoRepositoryProvider).getById(widget.questaoId!);
+    }
     final Questao questao = Questao(
       id: widget.questaoId ?? '',
+      professorId: existing?.professorId ?? professorId,
       enunciado: _enunciadoController.text.trim(),
-      alternativas: _altControllers.map((TextEditingController c) => c.text.trim()).toList(),
+      alternativas:
+          _altControllers.map((TextEditingController c) => c.text.trim()).toList(),
       gabaritoIndex: _gabarito,
+      tags: existing?.tags ?? const <String>[],
     );
     if (_isEdit) {
       await ref.read(questaoRepositoryProvider).update(questao);

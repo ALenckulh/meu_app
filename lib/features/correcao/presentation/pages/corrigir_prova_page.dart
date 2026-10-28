@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:meu_app/core/data/app_mock_store.dart';
 import 'package:meu_app/core/di/providers.dart';
 import 'package:meu_app/shared/models/correcao.dart';
+import 'package:meu_app/shared/models/prova.dart';
 import 'package:meu_app/shared/models/variacao_de_prova.dart';
 
 class CorrigirProvaPage extends ConsumerStatefulWidget {
@@ -19,8 +19,29 @@ class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
   Future<void> _simular() async {
     setState(() => _scanning = true);
     await Future<void>.delayed(const Duration(milliseconds: 800));
-    final AppMockStore store = ref.read(appMockStoreProvider);
-    final VariacaoDeProva variacao = store.variacoes.first;
+
+    final List<Prova> provas =
+        await ref.read(provaRepositoryProvider).listAll();
+    VariacaoDeProva? variacao;
+    for (final Prova prova in provas) {
+      final List<VariacaoDeProva> vars =
+          await ref.read(provaRepositoryProvider).listVariacoes(prova.id);
+      if (vars.isNotEmpty) {
+        variacao = vars.first;
+        break;
+      }
+    }
+
+    if (variacao == null) {
+      if (mounted) {
+        setState(() => _scanning = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Nenhuma variação disponível.')),
+        );
+      }
+      return;
+    }
+
     final Correcao correcao =
         await ref.read(correcaoRepositoryProvider).simularLeitura(
               variacaoId: variacao.id,

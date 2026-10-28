@@ -49,9 +49,15 @@ class _ProvaFormPageState extends ConsumerState<ProvaFormPage> {
       setState(() => _error = 'Selecione ao menos uma questão.');
       return;
     }
+    final String? professorId = ref.read(authSessionProvider)?.id;
+    if (professorId == null) {
+      setState(() => _error = 'Sessão inválida. Faça login novamente.');
+      return;
+    }
     final Prova prova = await ref.read(provaRepositoryProvider).create(
           Prova(
             id: '',
+            professorId: professorId,
             titulo: _tituloController.text.trim(),
             questaoIds: _selecionadas.toList(),
           ),

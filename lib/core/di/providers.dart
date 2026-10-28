@@ -1,45 +1,40 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:meu_app/core/data/app_mock_store.dart';
-import 'package:meu_app/features/alunos/data/repositories/aluno_mock_repository.dart';
+import 'package:meu_app/features/alunos/data/repositories/aluno_rtdb_repository.dart';
 import 'package:meu_app/features/alunos/domain/repositories/aluno_repository.dart';
 import 'package:meu_app/features/auth/data/repositories/firebase_auth_repository.dart';
 import 'package:meu_app/features/auth/domain/repositories/auth_repository.dart';
-import 'package:meu_app/features/correcao/data/repositories/correcao_mock_repository.dart';
+import 'package:meu_app/features/correcao/data/repositories/correcao_rtdb_repository.dart';
 import 'package:meu_app/features/correcao/domain/repositories/correcao_repository.dart';
-import 'package:meu_app/features/provas/data/repositories/prova_mock_repository.dart';
+import 'package:meu_app/features/provas/data/repositories/prova_rtdb_repository.dart';
 import 'package:meu_app/features/provas/domain/repositories/prova_repository.dart';
-import 'package:meu_app/features/questoes/data/repositories/questao_mock_repository.dart';
+import 'package:meu_app/features/questoes/data/repositories/questao_rtdb_repository.dart';
 import 'package:meu_app/features/questoes/domain/repositories/questao_repository.dart';
-import 'package:meu_app/features/turmas/data/repositories/turma_mock_repository.dart';
+import 'package:meu_app/features/turmas/data/repositories/turma_rtdb_repository.dart';
 import 'package:meu_app/features/turmas/domain/repositories/turma_repository.dart';
 import 'package:meu_app/shared/models/professor.dart';
-
-final appMockStoreProvider = Provider<AppMockStore>((Ref ref) {
-  return AppMockStore.instance;
-});
 
 final authRepositoryProvider = Provider<AuthRepository>((Ref ref) {
   return FirebaseAuthRepository();
 });
 
 final turmaRepositoryProvider = Provider<TurmaRepository>((Ref ref) {
-  return TurmaMockRepository(ref.watch(appMockStoreProvider));
+  return TurmaRtdbRepository();
 });
 
 final alunoRepositoryProvider = Provider<AlunoRepository>((Ref ref) {
-  return AlunoMockRepository(ref.watch(appMockStoreProvider));
+  return AlunoRtdbRepository();
 });
 
 final questaoRepositoryProvider = Provider<QuestaoRepository>((Ref ref) {
-  return QuestaoMockRepository(ref.watch(appMockStoreProvider));
+  return QuestaoRtdbRepository();
 });
 
 final provaRepositoryProvider = Provider<ProvaRepository>((Ref ref) {
-  return ProvaMockRepository(ref.watch(appMockStoreProvider));
+  return ProvaRtdbRepository();
 });
 
 final correcaoRepositoryProvider = Provider<CorrecaoRepository>((Ref ref) {
-  return CorrecaoMockRepository(ref.watch(appMockStoreProvider));
+  return CorrecaoRtdbRepository();
 });
 
 class AuthSessionNotifier extends Notifier<Professor?> {
