@@ -41,6 +41,8 @@ Este diário separa **N1** e **N2**. Tarefas listadas a partir dos commits atrib
 | 2026-10-29 | `3e35d77` | **Merge** de `origin/main` (CSV / PDF / QR da câmera — trabalho do grupo, esp. Letícia) na branch `dev` com RTDB |
 | 2026-10-29 | `4ba121f` | **Fechar N2 dados reais:** `Correcao.professorId` + filtro por uid; `Prova.turmaId` (form, detalhe, lista, variações multi-aluno); correção manual A–D pós-QR; simular resultado com aluno real sem correção; docs ENTREGAS/ENDPOINTS/seed; remoção `importMock` |
 | 2026-10-29 | push `dev` | Publicar commits locais (incl. `lib/core/data/rtdb.dart`) para corrigir build Vercel (`Undefined name 'rtdb'`) |
+| 2026-10-29 | `a628fd3` | UX: turma única, hub Imprimir, aba Corrigir, stats em Resultados |
+| 2026-10-29 | branch `feat/n2-entrega` | **README v2** + ENTREGAS + abertura do PR N2 (rastro review/merge) |
 
 ### Integração com o grupo (não é commit só meu de feature)
 
@@ -57,7 +59,8 @@ Este diário separa **N1** e **N2**. Tarefas listadas a partir dos commits atrib
 | Integração CSV/PDF/QR no `dev` | Feito (merge) | Feature originária do grupo |
 | Escopo por professor + turma na prova + correção real | Feito | `4ba121f` |
 | OMR da folha | Fora / N3 | Respostas A–D manuais após QR |
-| Desvio Firestore → RTDB | Justificado | Firebase real; documentar no README v2 e neste diário |
+| Desvio Firestore → RTDB | Justificado | Firebase real; README v2 + este diário |
+| README v2 + PR N2 | Feito / em review | branch `feat/n2-entrega` → `main` |
 
 ### Evidências N2
 
@@ -82,4 +85,4 @@ Este diário separa **N1** e **N2**. Tarefas listadas a partir dos commits atrib
 
 - Commits listados: `git log --author=anaPaulaSystextil`.  
 - Fluxos de tela atuais: [docs/FLUXOS-USUARIO.md](../FLUXOS-USUARIO.md).  
-- Entrega formal N2 ainda exige (grupo): README v2, APK, zip sem `build/`, diários dos demais alunos.
+- README v2 no repositório (`README.md`). Entrega Moodle (grupo): APK, zip sem `build/`, diários dos demais alunos + prints PR aberto → review → merge deste PR `feat/n2-entrega`.

@@ -1,6 +1,23 @@
 # App de Correção Automática de Provas
 
-Protótipo Flutter (N1) — interface, navegação e fluxo completo com dados mockados.
+**N2 — sistema funcional:** Flutter + **Firebase Auth** + **Realtime Database**. Telas centrais leem e gravam dados reais (`*RtdbRepository`). Sem mock nas operações de CRUD / provas / correção / resultados.
+
+> **Banco:** o enunciado N2 cita Firestore; este app usa **Realtime Database** (árvore JSON + repos já definidos). Setup: [docs/REALTIME-DATABASE-SETUP.md](docs/REALTIME-DATABASE-SETUP.md).
+
+## N1 (histórico)
+
+Protótipo navegável com interface, navegação e fluxo completo com **dados mockados** (base da N2).
+
+## N2 — estado atual
+
+- Auth: cadastro / login Firebase; perfil em `professores/{uid}`
+- CRUD real: turmas, alunos, questões, provas
+- Importação CSV de alunos (`file_picker` + validação)
+- Variações / embaralhamento com `prova.turmaId` e gabarito remapeado
+- PDF + QR (`CPROVA|v1|…`); hub **Imprimir** na prova
+- Correção: scan QR + respostas **A–D manuais** (OMR = N3); aba **Corrigir**
+- Resultados + estatísticas no app
+- Seed opcional no RTDB = dados pré-cadastrados no banco (permitido na N2), não mock in-app
 
 ## Executar
 
@@ -9,20 +26,61 @@ flutter pub get
 flutter run
 ```
 
-Login mock: `ana@escola.com` / `123456`
+1. Configure Firebase / `databaseURL` e Rules — [docs/REALTIME-DATABASE-SETUP.md](docs/REALTIME-DATABASE-SETUP.md)
+2. (Opcional) Importe [docs/seed/realtime-database-seed.json](docs/seed/realtime-database-seed.json) e alinhe `professorId` ao seu Auth uid
+3. Abra o app → **cadastre** ou faça **login** com conta Firebase Auth (não há login mock)
+
+## APK (entrega N2)
+
+```bash
+flutter build apk --release
+```
+
+Saída: `build/app/outputs/flutter-apk/app-release.apk`  
+(Não versionar `build/` nem o `.apk` no git; entram no zip Moodle.)
+
+## Telas principais
+
+Shell: **Home** · **Turmas** · **Questões** · **Provas** · **Corrigir**  
+Resultados / stats: Home ou fluxo pós-correção.  
+Jornadas: [docs/FLUXOS-USUARIO.md](docs/FLUXOS-USUARIO.md)
 
 ## Documentação
 
 - [docs/ARQUITETURA.md](docs/ARQUITETURA.md)
 - [docs/NORMAS-UX.md](docs/NORMAS-UX.md)
-- [docs/ENTREGAS.md](docs/ENTREGAS.md)
-- [docs/FLUXOS-USUARIO.md](docs/FLUXOS-USUARIO.md) — jornadas (N2; aba Corrigir, hub Imprimir)
-- [docs/diario-de-bordo/N2_Ana_Paula_Lenckulh_diario.md](docs/diario-de-bordo/N2_Ana_Paula_Lenckulh_diario.md) — diário Ana Paula Lenckulh
+- [docs/ENTREGAS.md](docs/ENTREGAS.md) — checklist N1 / N2 / N3
+- [docs/N2.md](docs/N2.md) — critérios oficiais da disciplina
+- [docs/BANCO-DE-DADOS.md](docs/BANCO-DE-DADOS.md)
+- [docs/ENDPOINTS.md](docs/ENDPOINTS.md)
+- [docs/REALTIME-DATABASE-SETUP.md](docs/REALTIME-DATABASE-SETUP.md)
+- [docs/FLUXOS-USUARIO.md](docs/FLUXOS-USUARIO.md)
+- [docs/diario-de-bordo/N2_Ana_Paula_Lenckulh_diario.md](docs/diario-de-bordo/N2_Ana_Paula_Lenckulh_diario.md)
 - [Vídeo demonstrativo do sistema](https://www.youtube.com/watch?v=Y0RQv2h-qpc)
 
 ## Escopo N1
 
 Fluxo navegável: Login → Turmas/Alunos → Questões → Provas → Variações → Folha/QR → Correção simulada → Resultados.
+
+## Status dos RF/RNF na N2
+
+| Cód. | N2 | Nota |
+|------|----|------|
+| RF01 | OK | CRUD questões no RTDB |
+| RF02 | N3 | PDF (não .doc editável) |
+| RF03 | OK | Embaralhamento / variações |
+| RF04 | OK | Prova geral + individualizada |
+| RF05 | OK | Folha + QR |
+| RF06 | Parcial | QR via câmera; marcações OMR = N3 (A–D manuais) |
+| RF07 | Parcial | Nota após respostas manuais / simular |
+| RF08 | OK | Import CSV |
+| RF09–RF10 | N3 | Excel / detalhe export |
+| RF11 | OK | Stats em Resultados |
+| RF12 | Parcial | Mobile + web (Vercel); foco mobile na correção |
+| RNF01–RNF02 | Em uso | |
+| RNF03 | N3 | Precisão OMR |
+| RNF04 | Parcial | Web gestão / mobile correção |
+| RNF05 | N3 | xlsx / doc |
 
 ## Requisitos Funcionais e Não Funcionais
 

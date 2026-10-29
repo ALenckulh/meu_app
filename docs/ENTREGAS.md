@@ -20,7 +20,13 @@
 - [x] PDF + QR real (`pdf`/`printing`: prova geral, folha geral, prova+folha por aluno e da turma inteira; QR `CPROVA|v1|p=..|v=..|a=..`)
 - [x] Câmera + leitura do QR (`mobile_scanner`) — identifica prova, variação e aluno
 - [x] Correções e estatísticas reais (respostas A–D manuais pós-QR; `correcoes` filtradas por `professorId`)
+- [x] README v2 — contrato no [`README.md`](../README.md) (escopo N2, RF status, run, APK)
 - [ ] Leitura óptica das marcações da folha (OMR) — **N3**
+
+### Entrega Moodle (fora do git)
+
+- Zip do projeto **sem** pasta `build/` + APK release + README v2 (já no repo)
+- Diários individuais (um por aluno); naming: `N2_NumDoGrupo.zip`, `N2_NomeDoAluno_diario.*`
 
 ## N3 — Completo e validado (pendente)
 
