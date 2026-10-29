@@ -1,19 +1,19 @@
-{
+﻿{
   "professores": {
-    "prof-1": {
+    "3JvuX2G7QzTn0dGDJtJHn1CwuY92": {
       "nome": "Ana Paula",
       "email": "ana@escola.com"
     }
   },
   "turmas": {
     "turma-1": {
-      "professorId": "prof-1",
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
       "nome": "3º Ano A",
       "disciplina": "Matemática",
       "ano": 2026
     },
     "turma-2": {
-      "professorId": "prof-1",
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
       "nome": "2º Ano B",
       "disciplina": "Física",
       "ano": 2026
@@ -48,56 +48,56 @@
   },
   "questoes": {
     "q1": {
-      "professorId": "prof-1",
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
       "enunciado": "Qual é o resultado de 2 + 2?",
       "alternativas": ["3", "4", "5", "6"],
       "gabaritoIndex": 1,
       "tags": ["matemática", "básico"]
     },
     "q2": {
-      "professorId": "prof-1",
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
       "enunciado": "Qual é a raiz quadrada de 9?",
       "alternativas": ["2", "3", "4", "9"],
       "gabaritoIndex": 1,
       "tags": ["matemática"]
     },
     "q3": {
-      "professorId": "prof-1",
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
       "enunciado": "Quanto é 5 × 6?",
       "alternativas": ["25", "30", "35", "40"],
       "gabaritoIndex": 1,
       "tags": ["matemática"]
     },
     "q4": {
-      "professorId": "prof-1",
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
       "enunciado": "Qual unidade mede velocidade?",
       "alternativas": ["kg", "m/s", "N", "J"],
       "gabaritoIndex": 1,
       "tags": ["física"]
     },
     "q5": {
-      "professorId": "prof-1",
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
       "enunciado": "Qual é a aceleração da gravidade aproximada?",
       "alternativas": ["5 m/s²", "9,8 m/s²", "15 m/s²", "20 m/s²"],
       "gabaritoIndex": 1,
       "tags": ["física"]
     },
     "q6": {
-      "professorId": "prof-1",
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
       "enunciado": "Quanto é 10% de 200?",
       "alternativas": ["10", "20", "30", "40"],
       "gabaritoIndex": 1,
       "tags": ["matemática"]
     },
     "q7": {
-      "professorId": "prof-1",
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
       "enunciado": "Qual é o oposto de +5?",
       "alternativas": ["+5", "-5", "0", "1/5"],
       "gabaritoIndex": 1,
       "tags": ["matemática"]
     },
     "q8": {
-      "professorId": "prof-1",
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
       "enunciado": "Energia cinética depende principalmente de:",
       "alternativas": ["cor", "massa e velocidade", "temperatura", "volume"],
       "gabaritoIndex": 1,
@@ -106,7 +106,7 @@
   },
   "provas": {
     "prova-1": {
-      "professorId": "prof-1",
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
       "titulo": "Prova Diagnóstica 1",
       "questaoIds": ["q1", "q2", "q3", "q6"],
       "quantidadeVariacoes": 2

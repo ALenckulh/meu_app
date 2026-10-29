@@ -2,7 +2,8 @@
   "project_info": {
     "project_number": "980988023923",
     "project_id": "app-correcao-provas",
-    "storage_bucket": "app-correcao-provas.firebasestorage.app"
+    "storage_bucket": "app-correcao-provas.firebasestorage.app",
+    "firebase_url": "https://app-correcao-provas-default-rtdb.firebaseio.com"
   },
   "client": [
     {

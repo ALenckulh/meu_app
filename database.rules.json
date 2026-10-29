@@ -1,6 +1,24 @@
 {
   "rules": {
     ".read": "auth != null",
-    ".write": "auth != null"
+    ".write": "auth != null",
+    "turmas": {
+      ".indexOn": ["professorId"]
+    },
+    "alunos": {
+      ".indexOn": ["turmaId"]
+    },
+    "questoes": {
+      ".indexOn": ["professorId"]
+    },
+    "provas": {
+      ".indexOn": ["professorId"]
+    },
+    "variacoes_de_prova": {
+      ".indexOn": ["provaId"]
+    },
+    "correcoes": {
+      ".indexOn": ["alunoId"]
+    }
   }
 }

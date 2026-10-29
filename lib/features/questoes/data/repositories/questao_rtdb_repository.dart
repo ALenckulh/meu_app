@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:meu_app/core/data/rtdb.dart';
 import 'package:meu_app/core/data/rtdb_paths.dart';
 import 'package:meu_app/features/questoes/domain/repositories/questao_repository.dart';
 import 'package:meu_app/shared/models/questao.dart';
@@ -9,7 +10,7 @@ class QuestaoRtdbRepository implements QuestaoRepository {
   QuestaoRtdbRepository({
     FirebaseDatabase? database,
     FirebaseAuth? auth,
-  })  : _db = database ?? FirebaseDatabase.instance,
+  })  : _db = database ?? rtdb,
         _auth = auth ?? FirebaseAuth.instance;
 
   final FirebaseDatabase _db;

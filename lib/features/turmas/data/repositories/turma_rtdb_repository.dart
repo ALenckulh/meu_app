@@ -1,4 +1,5 @@
 import 'package:firebase_database/firebase_database.dart';
+import 'package:meu_app/core/data/rtdb.dart';
 import 'package:meu_app/core/data/rtdb_paths.dart';
 import 'package:meu_app/features/turmas/domain/repositories/turma_repository.dart';
 import 'package:meu_app/shared/models/turma.dart';
@@ -6,7 +7,7 @@ import 'package:uuid/uuid.dart';
 
 class TurmaRtdbRepository implements TurmaRepository {
   TurmaRtdbRepository({FirebaseDatabase? database})
-      : _db = database ?? FirebaseDatabase.instance;
+      : _db = database ?? rtdb;
 
   final FirebaseDatabase _db;
   final Uuid _uuid = const Uuid();

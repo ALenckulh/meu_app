@@ -32,26 +32,26 @@ O seed usa `prof-1`. Troque pelo UID real:
 
 Ou edite o JSON antes do import (substituir todas as ocorrências de `prof-1`).
 
-## 4. Regras mínimas (temporário)
+## 4. Regras — **obrigatório publicar**
 
-Em **Rules**, para testar import + Auth:
+Locked mode (`.read/.write: false`) faz o Auth parecer “quebrado” no app:
+cadastro/login passam no Network, mas a gravação de `professores/{uid}` falha.
 
-```json
-{
-  "rules": {
-    ".read": "auth != null",
-    ".write": "auth != null"
-  }
-}
-```
+Console → Realtime Database → **Rules** → cole e **Publish** o conteúdo de [`database.rules.json`](../database.rules.json) (`auth != null` + `.indexOn` para queries).
 
-Aperte depois por path (`professores/$uid`, `turmas` com `professorId`, etc.).
+Ou: `firebase deploy --only database`.
+
+Sem Publish no Console, o arquivo do repo **não** vale. Sem `.indexOn`, listas falham com `index-not-defined`.
 
 ## 5. Flutter
 
 App usa `firebase_database` + `*RtdbRepository` (ver [ARQUITETURA.md](ARQUITETURA.md)).
 
-Confirme `databaseURL` em `lib/firebase_options.dart` igual à URL do Console.
+`databaseURL` em `lib/firebase_options.dart` deve ser a **API URL**  
+(ex.: `https://app-correcao-provas-default-rtdb.firebaseio.com`),  
+**não** o link da página do Console (`console.firebase.google.com/...`).
+
+Cadastro/login gravam `professores/{Auth.uid}` automaticamente.
 
 Deploy regras:
 

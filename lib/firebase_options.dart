@@ -40,8 +40,9 @@ class DefaultFirebaseOptions {
     }
   }
 
+  // Root API URL from Console → Realtime Database → Data.
   static const String databaseURL =
-      'https://console.firebase.google.com/project/app-correcao-provas/database/app-correcao-provas-default-rtdb/data/~2F';
+      'https://app-correcao-provas-default-rtdb.firebaseio.com';
 
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyBmaOSn6iS-2g62Yy5wrMNiTBt8rCs5t8k',
