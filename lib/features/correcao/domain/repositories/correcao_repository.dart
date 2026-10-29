@@ -4,8 +4,12 @@ abstract class CorrecaoRepository {
   Future<List<Correcao>> listAll();
   Future<Correcao?> getById(String id);
   Future<Correcao?> getByAluno(String alunoId);
-  Future<Correcao> simularLeitura({
+
+  /// Persiste correção com respostas informadas (pós-QR / entrada manual).
+  Future<Correcao> corrigir({
     required String variacaoId,
     required String alunoId,
+    required String professorId,
+    required List<int> respostas,
   });
 }

@@ -102,7 +102,7 @@ class CorrecaoResultadoPage extends ConsumerWidget {
                                 ),
                               ),
                               Text(
-                                'Leitura simulada · QR ${correcao.variacaoId}',
+                                'Respostas informadas · var ${correcao.variacaoId}',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: colors.onPrimaryContainer
                                       .withValues(alpha: 0.8),

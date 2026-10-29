@@ -6,5 +6,4 @@ abstract class AlunoRepository {
   Future<Aluno> create(Aluno aluno);
   Future<Aluno> update(Aluno aluno);
   Future<void> delete(String id);
-  Future<List<Aluno>> importMock(String turmaId);
 }

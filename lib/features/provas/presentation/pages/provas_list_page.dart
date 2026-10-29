@@ -7,6 +7,7 @@ import 'package:meu_app/core/widgets/empty_state.dart';
 import 'package:meu_app/core/widgets/feedback.dart';
 import 'package:meu_app/core/widgets/info_card.dart';
 import 'package:meu_app/shared/models/prova.dart';
+import 'package:meu_app/shared/models/turma.dart';
 
 final provasListProvider = FutureProvider<List<Prova>>((Ref ref) async {
   ref.watch(listVersionProvider);
@@ -75,7 +76,7 @@ class ProvasListPage extends ConsumerWidget {
   }
 }
 
-class _ProvaCard extends StatelessWidget {
+class _ProvaCard extends ConsumerWidget {
   const _ProvaCard({
     super.key,
     required this.prova,
@@ -88,7 +89,7 @@ class _ProvaCard extends StatelessWidget {
   final Future<void> Function() onDelete;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
 
@@ -130,10 +131,23 @@ class _ProvaCard extends StatelessWidget {
                           icon: Icons.help_outline,
                           label: '${prova.questaoIds.length} questões',
                         ),
-                        MetaChip(
-                          icon: Icons.shuffle,
-                          label: '${prova.quantidadeVariacoes} variações',
-                        ),
+                        if (prova.turmaId.isNotEmpty)
+                          FutureBuilder<Turma?>(
+                            future: ref
+                                .read(turmaRepositoryProvider)
+                                .getById(prova.turmaId),
+                            builder: (
+                              BuildContext context,
+                              AsyncSnapshot<Turma?> snap,
+                            ) {
+                              final String label =
+                                  snap.data?.nome ?? 'Turma';
+                              return MetaChip(
+                                icon: Icons.groups_outlined,
+                                label: label,
+                              );
+                            },
+                          ),
                       ],
                     ),
                   ],

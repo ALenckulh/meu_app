@@ -4,6 +4,7 @@ class Prova {
     required this.professorId,
     required this.titulo,
     required this.questaoIds,
+    this.turmaId = '',
     this.quantidadeVariacoes = 2,
   });
 
@@ -11,6 +12,9 @@ class Prova {
   final String professorId;
   final String titulo;
   final List<String> questaoIds;
+
+  /// Turma vinculada (alunos para variações / folhas individuais).
+  final String turmaId;
   final int quantidadeVariacoes;
 
   factory Prova.fromMap(String id, Map<dynamic, dynamic> map) {
@@ -21,6 +25,7 @@ class Prova {
       professorId: map['professorId'] as String? ?? '',
       titulo: map['titulo'] as String? ?? '',
       questaoIds: rawIds.map((dynamic e) => e.toString()).toList(),
+      turmaId: map['turmaId'] as String? ?? '',
       quantidadeVariacoes: (map['quantidadeVariacoes'] as num?)?.toInt() ?? 2,
     );
   }
@@ -30,6 +35,7 @@ class Prova {
       'professorId': professorId,
       'titulo': titulo,
       'questaoIds': questaoIds,
+      'turmaId': turmaId,
       'quantidadeVariacoes': quantidadeVariacoes,
     };
   }
@@ -39,6 +45,7 @@ class Prova {
     String? professorId,
     String? titulo,
     List<String>? questaoIds,
+    String? turmaId,
     int? quantidadeVariacoes,
   }) {
     return Prova(
@@ -46,6 +53,7 @@ class Prova {
       professorId: professorId ?? this.professorId,
       titulo: titulo ?? this.titulo,
       questaoIds: questaoIds ?? this.questaoIds,
+      turmaId: turmaId ?? this.turmaId,
       quantidadeVariacoes: quantidadeVariacoes ?? this.quantidadeVariacoes,
     );
   }

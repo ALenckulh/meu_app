@@ -56,8 +56,13 @@ class _IndividualizacaoPageState extends ConsumerState<IndividualizacaoPage> {
     _banco = <String, Questao>{for (final Questao q in todas) q.id: q};
     _turmas = turmas;
 
-    if (turmas.isNotEmpty) {
-      await _onTurmaChanged(turmas.first.id, atualizar: false);
+    String? turmaInicial = prova?.turmaId;
+    if (turmaInicial != null && turmaInicial.isEmpty) {
+      turmaInicial = null;
+    }
+    turmaInicial ??= turmas.isNotEmpty ? turmas.first.id : null;
+    if (turmaInicial != null) {
+      await _onTurmaChanged(turmaInicial, atualizar: false);
     }
     if (mounted) {
       setState(() => _loading = false);

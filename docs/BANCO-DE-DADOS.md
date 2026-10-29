@@ -12,6 +12,8 @@ erDiagram
   turmas ||--o{ alunos : "turmaId"
   professores ||--o{ questoes : "professorId"
   professores ||--o{ provas : "professorId"
+  turmas ||--o{ provas : "turmaId"
+  professores ||--o{ correcoes : "professorId"
   provas }o--o{ questoes : "questaoIds"
   provas ||--o{ variacoes_de_prova : "provaId"
   alunos ||--o{ variacoes_de_prova : "alunoId"
@@ -51,6 +53,7 @@ erDiagram
   provas {
     string id PK
     string professorId FK
+    string turmaId FK
     string titulo
     array questaoIds
     int quantidadeVariacoes
@@ -67,6 +70,7 @@ erDiagram
 
   correcoes {
     string id PK
+    string professorId FK
     string variacaoId FK
     string alunoId FK
     array respostas
@@ -122,6 +126,7 @@ erDiagram
 |-------|------|-----------|
 | `id` | string | Key |
 | `professorId` | string | FK → `professores.id` (Auth uid) |
+| `turmaId` | string | FK → `turmas.id` (alunos / variações) |
 | `titulo` | string | Título da prova |
 | `questaoIds` | array\<string\> | FKs → `questoes.id` |
 | `quantidadeVariacoes` | int | Quantidade de variações a gerar |
@@ -144,6 +149,7 @@ Versão embaralhada de uma prova vinculada a um aluno.
 | Campo | Tipo | Descrição |
 |-------|------|-----------|
 | `id` | string | Document ID |
+| `professorId` | string | FK → `professores.id` (Auth uid; filtro de Resultados) |
 | `variacaoId` | string | FK → `variacoes_de_prova.id` |
 | `alunoId` | string | FK → `alunos.id` |
 | `respostas` | array\<int\> | Alternativa marcada (0–3) por posição na variação |

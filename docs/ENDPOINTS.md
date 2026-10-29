@@ -38,7 +38,6 @@ Senha nunca no RTDB.
 | `listByTurma` | query | `alunos` orderByChild `turmaId` | `turmaId` | `List<Aluno>` |
 | `getById` | read | `alunos/{id}` | `id` | `Aluno?` |
 | `create` / `update` / `delete` | write | `alunos/{id}` | — | — |
-| `importMock` | multi-path update | `alunos/*` | `turmaId` | `List<Aluno>` |
 
 ---
 
@@ -61,7 +60,9 @@ Senha nunca no RTDB.
 | CRUD | — | `provas/{id}` | — | — |
 | `listVariacoes` | query | `variacoes_de_prova` by `provaId` | `provaId` | `List<VariacaoDeProva>` |
 | `getVariacaoById` | read | `variacoes_de_prova/{id}` | `id` | `VariacaoDeProva?` |
-| `gerarVariacao` | client + set | embaralha + escreve variação | flags shuffle | `VariacaoDeProva` |
+| `gerarVariacao` | client + set | embaralha + escreve variação p/ 1 aluno | flags shuffle | `VariacaoDeProva` |
+
+UI: Prova tem `turmaId`; tela Variações multi-seleciona alunos da turma e chama `gerarVariacao` por aluno (ou turma inteira).
 
 ---
 
@@ -69,10 +70,12 @@ Senha nunca no RTDB.
 
 | Método | Op | Path / query | Params | Retorno |
 |--------|-----|--------------|--------|---------|
-| `listAll` | read | `correcoes` | — | `List<Correcao>` |
+| `listAll` | query | `correcoes` by `professorId` = Auth uid | — | `List<Correcao>` |
 | `getById` | read | `correcoes/{id}` | `id` | `Correcao?` |
-| `getByAluno` | query | by `alunoId` | `alunoId` | `Correcao?` |
-| `simularLeitura` | client + set | lê variação, simula respostas, grava | `variacaoId`, `alunoId` | `Correcao` |
+| `getByAluno` | query | by `alunoId` (+ filtro professor) | `alunoId` | `Correcao?` |
+| `corrigir` | client + set | score vs `gabaritoRemapeado`, grava c/ `professorId` | `variacaoId`, `alunoId`, `professorId`, `respostas` | `Correcao` |
+
+Demo UI: `/mais/resultados` → **Simular resultado** escolhe aluno real do professor **sem** correção, gera/usa variação da prova da turma, respostas A–D aleatórias, chama `corrigir`. Nunca cria aluno fake.
 
 ---
 
@@ -84,14 +87,14 @@ Senha nunca no RTDB.
 | `/turmas` | `turmas.listByProfessor` |
 | `/turmas/nova`, `.../editar` | `turmas.create` / `update` |
 | `/turmas/:id` | `turmas.getById` + `alunos.listByTurma` |
-| `.../alunos/*`, `.../importar` | alunos CRUD / `importMock` |
+| `.../alunos/*`, `.../importar` | alunos CRUD / CSV |
 | `/questoes` | `questoes.listAll` |
 | `/questoes/nova`, `.../editar` | create / update |
 | `/provas` | `provas.listAll` |
-| `/provas/nova` | `provas.create` |
-| `.../variacoes` | `listVariacoes` + `gerarVariacao` |
-| `/mais/correcao` | `simularLeitura` |
-| `/mais/resultados` | `correcoes.listAll` |
+| `/provas/nova` | `provas.create` (com `turmaId`) |
+| `.../variacoes` | turma + multi-alunos → `gerarVariacao` por aluno |
+| `/mais/correcao` | QR + `corrigir` (respostas manuais) |
+| `/mais/resultados` | `correcoes.listAll` (+ simular: aluno real sem correção → `corrigir`) |
 | `/mais/estatisticas` | `correcoes.listAll` |
 
 ## Fora do RTDB

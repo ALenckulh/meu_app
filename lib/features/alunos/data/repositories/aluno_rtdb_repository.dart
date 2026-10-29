@@ -64,34 +64,4 @@ class AlunoRtdbRepository implements AlunoRepository {
   Future<void> delete(String id) async {
     await _db.ref(RtdbPaths.aluno(id)).remove();
   }
-
-  @override
-  Future<List<Aluno>> importMock(String turmaId) async {
-    final List<Aluno> imported = <Aluno>[
-      Aluno(
-        id: _uuid.v4(),
-        turmaId: turmaId,
-        nome: 'Aluno Importado 1',
-        matricula: 'IMP001',
-      ),
-      Aluno(
-        id: _uuid.v4(),
-        turmaId: turmaId,
-        nome: 'Aluno Importado 2',
-        matricula: 'IMP002',
-      ),
-      Aluno(
-        id: _uuid.v4(),
-        turmaId: turmaId,
-        nome: 'Aluno Importado 3',
-        matricula: 'IMP003',
-      ),
-    ];
-    final Map<String, dynamic> updates = <String, dynamic>{};
-    for (final Aluno a in imported) {
-      updates[RtdbPaths.aluno(a.id)] = a.toMap();
-    }
-    await _db.ref().update(updates);
-    return imported;
-  }
 }

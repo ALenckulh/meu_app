@@ -22,9 +22,16 @@ Arquivo: [`docs/seed/realtime-database-seed.json`](seed/realtime-database-seed.j
 
 **Atenção:** Import substitui os dados naquele path. Na raiz `/`, sobrescreve tudo.
 
+### Limpar demo do seed (recomendado em multi-professor)
+
+O JSON de demo inclui chaves fixas (`aluno-*`, `turma-*`, `corr-*`, `var-*`, `prova-1`, `q*`).  
+Se outro professor não deve ver esses nós no Console (ou turmas/alunos legados), **apague** no Console (Data → nó → Delete) ou não importe a seção correspondente.
+
+`correcoes.listAll` no app filtra por `professorId` = Auth uid. Nós `corr-*` sem `professorId` (ou de outro uid) **não** aparecem em Resultados.
+
 ## 3. Ligar ao Auth UID
 
-O seed usa `prof-1`. Troque pelo UID real:
+O seed usa um `professorId` de exemplo. Troque pelo UID real:
 
 1. **Authentication** → copie o `uid`
 2. No Data, renomeie `professores/prof-1` → `professores/{uid}`

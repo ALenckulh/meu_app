@@ -107,6 +107,7 @@
   "provas": {
     "prova-1": {
       "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
+      "turmaId": "turma-1",
       "titulo": "Prova Diagnóstica 1",
       "questaoIds": ["q1", "q2", "q3", "q6"],
       "quantidadeVariacoes": 2
@@ -133,6 +134,7 @@
   },
   "correcoes": {
     "corr-1": {
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
       "variacaoId": "var-1",
       "alunoId": "aluno-1",
       "respostas": [1, 1, 0, 1],
@@ -141,6 +143,7 @@
       "totalQuestoes": 4
     },
     "corr-2": {
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
       "variacaoId": "var-1",
       "alunoId": "aluno-2",
       "respostas": [1, 1, 1, 1],
@@ -149,6 +152,7 @@
       "totalQuestoes": 4
     },
     "corr-3": {
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
       "variacaoId": "var-1",
       "alunoId": "aluno-3",
       "respostas": [0, 1, 0, 0],
@@ -158,3 +162,4 @@
     }
   }
 }
+

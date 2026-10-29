@@ -1,5 +1,4 @@
-import 'dart:math';
-
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:meu_app/core/data/rtdb.dart';
 import 'package:meu_app/core/data/rtdb_paths.dart';
@@ -9,16 +8,29 @@ import 'package:meu_app/shared/models/variacao_de_prova.dart';
 import 'package:uuid/uuid.dart';
 
 class CorrecaoRtdbRepository implements CorrecaoRepository {
-  CorrecaoRtdbRepository({FirebaseDatabase? database})
-      : _db = database ?? rtdb;
+  CorrecaoRtdbRepository({
+    FirebaseDatabase? database,
+    FirebaseAuth? auth,
+  })  : _db = database ?? rtdb,
+        _auth = auth ?? FirebaseAuth.instance;
 
   final FirebaseDatabase _db;
+  final FirebaseAuth _auth;
   final Uuid _uuid = const Uuid();
-  final Random _random = Random();
+
+  String? get _uid => _auth.currentUser?.uid;
 
   @override
   Future<List<Correcao>> listAll() async {
-    final DataSnapshot snap = await _db.ref(RtdbPaths.correcoes).get();
+    final String? uid = _uid;
+    if (uid == null) {
+      return <Correcao>[];
+    }
+    final DataSnapshot snap = await _db
+        .ref(RtdbPaths.correcoes)
+        .orderByChild('professorId')
+        .equalTo(uid)
+        .get();
     if (!snap.exists || snap.value == null) {
       return <Correcao>[];
     }
@@ -46,11 +58,17 @@ class CorrecaoRtdbRepository implements CorrecaoRepository {
     }
     final Map<dynamic, dynamic> map =
         snap.value as Map<dynamic, dynamic>;
-    final MapEntry<dynamic, dynamic> first = map.entries.first;
-    return Correcao.fromMap(
-      first.key.toString(),
-      Map<dynamic, dynamic>.from(first.value as Map),
-    );
+    final String? uid = _uid;
+    for (final MapEntry<dynamic, dynamic> e in map.entries) {
+      final Correcao c = Correcao.fromMap(
+        e.key.toString(),
+        Map<dynamic, dynamic>.from(e.value as Map),
+      );
+      if (uid == null || c.professorId == uid || c.professorId.isEmpty) {
+        return c;
+      }
+    }
+    return null;
   }
 
   @override
@@ -77,22 +95,31 @@ class CorrecaoRtdbRepository implements CorrecaoRepository {
   }
 
   @override
-  Future<Correcao> simularLeitura({
+  Future<Correcao> corrigir({
     required String variacaoId,
     required String alunoId,
+    required String professorId,
+    required List<int> respostas,
   }) async {
     final VariacaoDeProva? variacao = await getVariacao(variacaoId);
     if (variacao == null) {
       throw StateError('Variação não encontrada: $variacaoId');
     }
+    if (respostas.length != variacao.ordemQuestoes.length) {
+      throw ArgumentError(
+        'Respostas (${respostas.length}) ≠ questões '
+        '(${variacao.ordemQuestoes.length}).',
+      );
+    }
 
-    final List<int> respostas = <int>[];
     int acertos = 0;
-    for (final String questaoId in variacao.ordemQuestoes) {
+    for (int i = 0; i < variacao.ordemQuestoes.length; i++) {
+      final String questaoId = variacao.ordemQuestoes[i];
       final int gabarito = variacao.gabaritoRemapeado[questaoId] ?? 0;
-      final int marcada =
-          _random.nextDouble() < 0.75 ? gabarito : _random.nextInt(4);
-      respostas.add(marcada);
+      final int marcada = respostas[i];
+      if (marcada < 0 || marcada > 3) {
+        throw ArgumentError('Resposta inválida na posição $i: $marcada');
+      }
       if (marcada == gabarito) {
         acertos++;
       }
@@ -105,9 +132,10 @@ class CorrecaoRtdbRepository implements CorrecaoRepository {
     final String id = existing?.id ?? _uuid.v4();
     final Correcao correcao = Correcao(
       id: id,
+      professorId: professorId,
       variacaoId: variacaoId,
       alunoId: alunoId,
-      respostas: respostas,
+      respostas: List<int>.from(respostas),
       nota: double.parse(nota.toStringAsFixed(1)),
       acertos: acertos,
       totalQuestoes: total,
