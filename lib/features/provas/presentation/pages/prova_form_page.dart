@@ -85,7 +85,7 @@ class _ProvaFormPageState extends ConsumerState<ProvaFormPage> {
       return;
     }
     showSuccessSnackBar(context, 'Prova criada.');
-    context.go('/provas/${prova.id}/questoes');
+    context.go('/provas/${prova.id}');
   }
 
   @override
@@ -210,7 +210,7 @@ class _ProvaFormPageState extends ConsumerState<ProvaFormPage> {
                       key: const Key('btn-salvar-prova'),
                       onPressed: _save,
                       icon: const Icon(Icons.arrow_forward),
-                      label: const Text('Salvar e ordenar questões'),
+                      label: const Text('Salvar prova'),
                     ),
                   ),
                 ],

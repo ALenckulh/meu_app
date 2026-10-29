@@ -48,9 +48,9 @@ class AppShell extends StatelessWidget {
           ),
           NavigationDestination(
             key: Key('nav-mais'),
-            icon: Icon(Icons.more_horiz),
-            selectedIcon: Icon(Icons.more_horiz),
-            label: 'Mais',
+            icon: Icon(Icons.camera_alt_outlined),
+            selectedIcon: Icon(Icons.camera_alt),
+            label: 'Corrigir',
           ),
         ],
       ),

@@ -268,6 +268,12 @@ class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
       appBar: AppBar(
         title: const Text('Corrigir prova'),
         actions: <Widget>[
+          IconButton(
+            key: const Key('btn-ir-resultados'),
+            tooltip: 'Resultados',
+            onPressed: () => context.push('/mais/resultados'),
+            icon: const Icon(Icons.bar_chart_outlined),
+          ),
           if (_cameraSuportada && folha == null)
             IconButton(
               tooltip: 'Lanterna',

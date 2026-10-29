@@ -188,28 +188,10 @@ class _ProvaDetailPageState extends ConsumerState<ProvaDetailPage> {
                 NavCard(
                   key: const Key('item-gerar'),
                   icon: Icons.print_outlined,
-                  title: 'Gerar / prévia de impressão',
-                  subtitle: 'Veja a prova como será impressa',
+                  title: 'Imprimir / PDF',
+                  subtitle: 'Geral, folha ou por aluno / turma',
                   onTap: () =>
                       context.push('/provas/${widget.provaId}/gerar'),
-                ),
-                const SizedBox(height: 12),
-                NavCard(
-                  key: const Key('item-folha'),
-                  icon: Icons.grid_on_outlined,
-                  title: 'Folha de respostas',
-                  subtitle: 'Cartão-resposta com QR Code',
-                  onTap: () =>
-                      context.push('/provas/${widget.provaId}/folha'),
-                ),
-                const SizedBox(height: 12),
-                NavCard(
-                  key: const Key('item-individual'),
-                  icon: Icons.person_outline,
-                  title: 'Individualização',
-                  subtitle: 'Prévia por aluno',
-                  onTap: () => context
-                      .push('/provas/${widget.provaId}/individualizacao'),
                 ),
               ],
             ),

@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +8,7 @@ import 'package:meu_app/core/di/providers.dart';
 import 'package:meu_app/core/theme/app_semantic_colors.dart';
 import 'package:meu_app/core/widgets/empty_state.dart';
 import 'package:meu_app/core/widgets/feedback.dart';
+import 'package:meu_app/core/widgets/section_header.dart';
 import 'package:meu_app/shared/models/aluno.dart';
 import 'package:meu_app/shared/models/correcao.dart';
 import 'package:meu_app/shared/models/prova.dart';
@@ -191,14 +193,6 @@ class _ResultadosPageState extends ConsumerState<ResultadosPage> {
                   onPressed: _simulando ? null : _simularResultado,
                 ),
               ),
-              Tooltip(
-                message: 'Estatísticas',
-                child: IconButton(
-                  key: const Key('btn-ir-estatisticas'),
-                  icon: const Icon(Icons.insights_outlined),
-                  onPressed: () => context.push('/mais/estatisticas'),
-                ),
-              ),
             ],
           ),
           body: rows.isEmpty
@@ -259,7 +253,85 @@ class _ResultadosPageState extends ConsumerState<ResultadosPage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SectionHeader('Desempenho'),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 20, 16, 12),
+                        child: SizedBox(
+                          height: 180,
+                          child: BarChart(
+                            BarChartData(
+                              alignment: BarChartAlignment.spaceAround,
+                              maxY: 10,
+                              gridData: FlGridData(
+                                drawVerticalLine: false,
+                                horizontalInterval: 2,
+                                getDrawingHorizontalLine: (double v) => FlLine(
+                                  color: colors.outlineVariant,
+                                  strokeWidth: 1,
+                                ),
+                              ),
+                              borderData: FlBorderData(show: false),
+                              titlesData: FlTitlesData(
+                                leftTitles: const AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    reservedSize: 28,
+                                    interval: 2,
+                                  ),
+                                ),
+                                rightTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                topTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    getTitlesWidget:
+                                        (double value, TitleMeta meta) {
+                                      final int i = value.toInt();
+                                      if (i < 0 || i >= rows.length) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      final String nome = rows[i].aluno.nome;
+                                      return Padding(
+                                        padding: const EdgeInsets.only(top: 6),
+                                        child: Text(
+                                          nome.length > 6
+                                              ? '${nome.substring(0, 6)}…'
+                                              : nome,
+                                          style: theme.textTheme.labelSmall,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                              barGroups: List<BarChartGroupData>.generate(
+                                rows.length,
+                                (int i) => BarChartGroupData(
+                                  x: i,
+                                  barRods: <BarChartRodData>[
+                                    BarChartRodData(
+                                      toY: rows[i].correcao.nota,
+                                      color: colors.primary,
+                                      width: 16,
+                                      borderRadius:
+                                          const BorderRadius.vertical(
+                                        top: Radius.circular(6),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SectionHeader('Por aluno'),
                     ...rows.map((_ResultadoRow row) {
                       final Correcao c = row.correcao;
                       final Aluno aluno = row.aluno;

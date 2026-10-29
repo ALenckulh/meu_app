@@ -16,7 +16,7 @@ Login mock: `ana@escola.com` / `123456`
 - [docs/ARQUITETURA.md](docs/ARQUITETURA.md)
 - [docs/NORMAS-UX.md](docs/NORMAS-UX.md)
 - [docs/ENTREGAS.md](docs/ENTREGAS.md)
-- [docs/FLUXOS-USUARIO.md](docs/FLUXOS-USUARIO.md) — fluxos por tela/rota (N2)
+- [docs/FLUXOS-USUARIO.md](docs/FLUXOS-USUARIO.md) — jornadas (N2; aba Corrigir, hub Imprimir)
 - [docs/diario-de-bordo/N2_Ana_Paula_Lenckulh_diario.md](docs/diario-de-bordo/N2_Ana_Paula_Lenckulh_diario.md) — diário Ana Paula Lenckulh
 - [Vídeo demonstrativo do sistema](https://www.youtube.com/watch?v=Y0RQv2h-qpc)
 

@@ -21,8 +21,7 @@ class ProvaVariacoesPage extends ConsumerStatefulWidget {
 
 class _ProvaVariacoesPageState extends ConsumerState<ProvaVariacoesPage> {
   Prova? _prova;
-  List<Turma> _turmas = <Turma>[];
-  String? _turmaId;
+  Turma? _turma;
   bool _embaralharQuestoes = true;
   bool _embaralharAlternativas = true;
   List<Aluno> _alunos = <Aluno>[];
@@ -38,61 +37,29 @@ class _ProvaVariacoesPageState extends ConsumerState<ProvaVariacoesPage> {
   }
 
   Future<void> _load() async {
-    final String? professorId = ref.read(authSessionProvider)?.id;
     final Prova? prova =
         await ref.read(provaRepositoryProvider).getById(widget.provaId);
-    final List<Turma> turmas = professorId == null
-        ? <Turma>[]
-        : await ref.read(turmaRepositoryProvider).listByProfessor(professorId);
+    final String? turmaId =
+        (prova?.turmaId != null && prova!.turmaId.isNotEmpty)
+            ? prova.turmaId
+            : null;
 
-    String? turmaId = prova?.turmaId;
-    if (turmaId != null && turmaId.isEmpty) {
-      turmaId = null;
-    }
-    turmaId ??= turmas.isNotEmpty ? turmas.first.id : null;
-
+    Turma? turma;
     List<Aluno> alunos = <Aluno>[];
     if (turmaId != null) {
+      turma = await ref.read(turmaRepositoryProvider).getById(turmaId);
       alunos = await ref.read(alunoRepositoryProvider).listByTurma(turmaId);
     }
 
     if (mounted) {
       setState(() {
         _prova = prova;
-        _turmas = turmas;
-        _turmaId = turmaId;
+        _turma = turma;
         _alunos = alunos;
         _selecionados
           ..clear()
           ..addAll(alunos.map((Aluno a) => a.id));
         _loading = false;
-      });
-    }
-  }
-
-  Future<void> _onTurmaChanged(String? turmaId) async {
-    setState(() {
-      _turmaId = turmaId;
-      _alunos = <Aluno>[];
-      _selecionados.clear();
-    });
-    if (turmaId == null) {
-      return;
-    }
-    final List<Aluno> alunos =
-        await ref.read(alunoRepositoryProvider).listByTurma(turmaId);
-    if (_prova != null && _prova!.turmaId != turmaId) {
-      final Prova updated = _prova!.copyWith(turmaId: turmaId);
-      await ref.read(provaRepositoryProvider).update(updated);
-      _prova = updated;
-      ref.read(listVersionProvider.notifier).bump();
-    }
-    if (mounted) {
-      setState(() {
-        _alunos = alunos;
-        _selecionados
-          ..clear()
-          ..addAll(alunos.map((Aluno a) => a.id));
       });
     }
   }
@@ -131,10 +98,7 @@ class _ProvaVariacoesPageState extends ConsumerState<ProvaVariacoesPage> {
     setState(() => _gerando = true);
     try {
       await ref.read(provaRepositoryProvider).update(
-            _prova!.copyWith(
-              turmaId: _turmaId ?? _prova!.turmaId,
-              quantidadeVariacoes: ids.length,
-            ),
+            _prova!.copyWith(quantidadeVariacoes: ids.length),
           );
       final List<VariacaoDeProva> geradas = <VariacaoDeProva>[];
       for (final String alunoId in ids) {
@@ -155,9 +119,15 @@ class _ProvaVariacoesPageState extends ConsumerState<ProvaVariacoesPage> {
         _geradas = geradas;
         _gerando = false;
       });
-      showSuccessSnackBar(
-        context,
-        '${geradas.length} variação(ões) gerada(s).',
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${geradas.length} variação(ões) gerada(s).'),
+          action: SnackBarAction(
+            label: 'Imprimir',
+            onPressed: () =>
+                context.push('/provas/${widget.provaId}/gerar'),
+          ),
+        ),
       );
     } catch (e) {
       if (mounted) {
@@ -180,6 +150,7 @@ class _ProvaVariacoesPageState extends ConsumerState<ProvaVariacoesPage> {
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
+    final bool semTurma = _turma == null;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Variações da prova')),
@@ -191,43 +162,46 @@ class _ProvaVariacoesPageState extends ConsumerState<ProvaVariacoesPage> {
                 InfoCard(
                   icon: Icons.shuffle,
                   title: _prova?.titulo ?? 'Prova',
-                  subtitle:
-                      'Embaralhe questões e alternativas por aluno da turma.',
+                  subtitle: semTurma
+                      ? 'Defina a turma no detalhe da prova.'
+                      : 'Turma: ${_turma!.nome} · ${_turma!.disciplina}',
                 ),
+                if (semTurma) ...<Widget>[
+                  const SizedBox(height: 12),
+                  Card(
+                    color: colors.errorContainer,
+                    child: ListTile(
+                      leading: Icon(Icons.warning_amber,
+                          color: colors.onErrorContainer),
+                      title: Text(
+                        'Prova sem turma',
+                        style: TextStyle(color: colors.onErrorContainer),
+                      ),
+                      subtitle: Text(
+                        'Escolha a turma no detalhe da prova para listar alunos.',
+                        style: TextStyle(color: colors.onErrorContainer),
+                      ),
+                      trailing: TextButton(
+                        onPressed: () =>
+                            context.go('/provas/${widget.provaId}'),
+                        child: const Text('Alterar'),
+                      ),
+                    ),
+                  ),
+                ],
                 const SectionHeader('Configuração'),
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
                     child: Column(
                       children: <Widget>[
-                        DropdownButtonFormField<String>(
-                          key: ValueKey<String>(
-                              'select-turma-variacao-${_turmaId ?? ''}'),
-                          initialValue: _turmaId,
-                          decoration: const InputDecoration(
-                            labelText: 'Turma',
-                            hintText: 'Selecione a turma',
-                            helperText:
-                                'Define quais alunos aparecem abaixo.',
-                            prefixIcon: Icon(Icons.groups_outlined),
-                          ),
-                          items: _turmas
-                              .map(
-                                (Turma t) => DropdownMenuItem<String>(
-                                  value: t.id,
-                                  child: Text('${t.nome} · ${t.disciplina}'),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: _gerando ? null : _onTurmaChanged,
-                        ),
                         SwitchListTile(
                           key: const Key('switch-embaralhar-questoes'),
                           contentPadding: EdgeInsets.zero,
                           title: const Text('Embaralhar questões'),
                           subtitle: const Text('Ordem diferente por versão'),
                           value: _embaralharQuestoes,
-                          onChanged: _gerando
+                          onChanged: _gerando || semTurma
                               ? null
                               : (bool v) =>
                                   setState(() => _embaralharQuestoes = v),
@@ -239,7 +213,7 @@ class _ProvaVariacoesPageState extends ConsumerState<ProvaVariacoesPage> {
                           subtitle:
                               const Text('A/B/C/D em posições trocadas'),
                           value: _embaralharAlternativas,
-                          onChanged: _gerando
+                          onChanged: _gerando || semTurma
                               ? null
                               : (bool v) => setState(
                                     () => _embaralharAlternativas = v,
@@ -272,12 +246,13 @@ class _ProvaVariacoesPageState extends ConsumerState<ProvaVariacoesPage> {
                   ),
                 ),
                 Card(
-                  key: ValueKey<String>('alunos-turma-${_turmaId ?? ''}'),
                   child: _alunos.isEmpty
                       ? Padding(
                           padding: const EdgeInsets.all(16),
                           child: Text(
-                            'Cadastre alunos nesta turma para gerar variações.',
+                            semTurma
+                                ? 'Sem turma vinculada.'
+                                : 'Cadastre alunos nesta turma para gerar variações.',
                             style: TextStyle(color: colors.error),
                           ),
                         )

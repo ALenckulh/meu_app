@@ -1,207 +1,154 @@
-# Fluxos de usuário — telas atuais (N2)
+# Fluxos de usuário — jornadas (N2)
 
-Fonte das rotas: [`lib/core/router/app_router.dart`](../lib/core/router/app_router.dart).  
-Dados: **Firebase Auth** + **Realtime Database** (`*RtdbRepository`).
+Fonte: [`app_router.dart`](../lib/core/router/app_router.dart).  
+Dados: **Firebase Auth** + **Realtime Database**.
 
-Shell (após login): NavigationBar com **Início | Turmas | Questões | Provas | Mais**.
+Barra inferior: **Início | Turmas | Questões | Provas | Corrigir**.
 
-```mermaid
-flowchart TB
-  Login["/login"] --> Home["/home"]
-  Cadastro["/cadastro"] --> Home
-  Home --> Turmas["/turmas"]
-  Home --> Questoes["/questoes"]
-  Home --> Provas["/provas"]
-  Home --> Mais["/mais"]
-  Turmas --> Questoes
-  Questoes --> Provas
-  Provas --> Mais
-```
-
-Não autenticado → redireciona para `/login`. Autenticado em login/cadastro → `/home`.
+Convenção: passos = ações do usuário. Pré-requisitos evitam repetir jornadas.
 
 ---
 
-## 1. Auth
+## 1. Login
 
-**Objetivo:** entrar ou criar conta de professor.
+1. Abre o app → **Login**.
+2. Digita **E-mail** e **Senha** → toca entrar → **Início**.
 
-| Rota | Tela |
-|------|------|
-| `/login` | `LoginPage` |
-| `/cadastro` | `CadastroPage` |
-
-**Fluxo**
-
-1. Abrir app → `/login`
-2. Informar e-mail/senha → Auth `login` → perfil `professores/{uid}` → `/home`
-3. Ou **Cadastro** → `/cadastro` → Auth `register` + grava perfil → login → `/home`
-4. Em `/home`, logout → Auth `logout` → `/login`
-
-**Dados:** Firebase Auth; nó RTDB `professores/{uid}` (nome, e-mail).
+**Dados:** Auth + `professores/{uid}`.
 
 ---
 
-## 2. Início (Home)
+## 2. Cadastro
 
-**Objetivo:** atalhos do fluxo principal.
-
-| Rota | Tela |
-|------|------|
-| `/home` | `DashboardPage` |
-
-**Ações**
-
-- Cards → `/turmas`, `/questoes`, `/provas`, `/mais/correcao`, `/mais/resultados`
-- Logout
-
-**Dados:** só sessão (`authSessionProvider`).
+1. No Login, toca cadastro → preenche **Nome**, **E-mail**, **Senha** → cadastrar → **Início**.
 
 ---
 
-## 3. Turmas e alunos
+## 3. Logout
 
-**Objetivo:** CRUD de turmas e alunos; importar CSV.
+**Pré-requisito:** [§1](#1-login).
 
-| Rota | Tela |
-|------|------|
-| `/turmas` | `TurmasListPage` |
-| `/turmas/nova` | `TurmaFormPage` (criar) |
-| `/turmas/:turmaId` | `TurmaDetailPage` |
-| `/turmas/:turmaId/editar` | `TurmaFormPage` (editar) |
-| `/turmas/:turmaId/alunos/novo` | `AlunoFormPage` |
-| `/turmas/:turmaId/alunos/:alunoId/editar` | `AlunoFormPage` |
-| `/turmas/:turmaId/importar` | `ImportarAlunosPage` |
-
-**Fluxo típico**
-
-1. Tab **Turmas** → lista (`listByProfessor`)
-2. FAB **Nova turma** → form → create → volta à lista
-3. Abrir turma → alunos da turma; editar/excluir turma; FAB aluno; ícone upload → CSV
-4. **Importar:** `file_picker` → `CsvAlunosParser` (prévia/validação) → create alunos → RTDB
-5. Aluno: criar/editar/excluir
-
-**Dados:** `turmas` (`professorId`), `alunos` (`turmaId`).
+1. Em **Início**, toca **Sair** → Login.
 
 ---
 
-## 4. Questões
+## 4. Turma CRUD
 
-**Objetivo:** banco de questões (CRUD + busca).
+1. Aba **Turmas** → FAB nova → preenche nome/disciplina/ano → **Salvar**.
+2. Toca a turma → detalhe; editar/excluir pela lista ou detalhe.
 
-| Rota | Tela |
-|------|------|
-| `/questoes` | `QuestoesListPage` |
-| `/questoes/nova` | `QuestaoFormPage` |
-| `/questoes/:questaoId/editar` | `QuestaoFormPage` |
-
-**Fluxo**
-
-1. Tab **Questões** → listar (filtro/busca)
-2. Nova → enunciado, 4 alternativas, gabarito, tags → create
-3. Editar / excluir
-
-**Dados:** `questoes` (`professorId`, `gabaritoIndex` 0–3).
+**Dados:** `turmas`.
 
 ---
 
-## 5. Provas, variações e geração (PDF / QR)
+## 5. Aluno CRUD
 
-**Objetivo:** montar prova ligada a uma turma, embaralhar por aluno, imprimir PDF com QR.
+**Pré-requisito:** [§4](#4-turma-crud) — detalhe da turma.
 
-| Rota | Tela |
-|------|------|
-| `/provas` | `ProvasListPage` |
-| `/provas/nova` | `ProvaFormPage` |
-| `/provas/:provaId` | `ProvaDetailPage` |
-| `/provas/:provaId/questoes` | `ProvaQuestoesPage` |
-| `/provas/:provaId/variacoes` | `ProvaVariacoesPage` |
-| `/provas/:provaId/variacoes/:variacaoId` | `VariacaoPreviewPage` |
-| `/provas/:provaId/gerar` | `GerarProvaPage` |
-| `/provas/:provaId/folha` | `FolhaRespostasPage` |
-| `/provas/:provaId/individualizacao` | `IndividualizacaoPage` |
+1. FAB aluno → nome/matrícula → salvar.
+2. Editar/excluir na lista de alunos.
 
-```mermaid
-flowchart LR
-  List["/provas"] --> Nova["/provas/nova"]
-  List --> Detail["/provas/:id"]
-  Detail --> Ord["questoes"]
-  Detail --> Var["variacoes"]
-  Detail --> Gerar["gerar"]
-  Detail --> Folha["folha"]
-  Detail --> Indiv["individualizacao"]
-  Var --> Preview["variacoes/:vid"]
-```
-
-### 5.1 Criar e montar
-
-1. **Nova prova** → título + **turma** + questões → create (`turmaId`, `questaoIds`)
-2. **Detalhe** → ver/trocar turma; atalhos montagem/saída
-3. **Questões e ordem** → ordenar `questaoIds` → update
-
-### 5.2 Variações / embaralhamento
-
-1. Escolher turma (grava `prova.turmaId`)
-2. Switches: embaralhar questões / alternativas
-3. Checklist de alunos → **Gerar selecionados** ou **Gerar turma inteira**
-4. Cada aluno → `gerarVariacao` (ordem + `gabaritoRemapeado`) → lista → preview
-
-### 5.3 PDF e QR
-
-| Tela | Ação | QR |
-|------|------|-----|
-| Gerar | PDF prova + folha **geral** | `CPROVA\|v1\|p=<provaId>` |
-| Folha | PDF só folha geral | idem |
-| Individualização | PDF **1 aluno** (prova+folha) | `p` + `v` + `a` |
-| Individualização | PDF **turma inteira** | QR individual por cópia |
-
-`PdfAcoes`: imprimir/salvar ou compartilhar (`printing`).
-
-**Dados:** `provas`, `variacoes_de_prova`, questões do banco.
+**Dados:** `alunos`.
 
 ---
 
-## 6. Mais — correção, resultados, estatísticas
+## 6. Importar CSV
 
-| Rota | Tela |
-|------|------|
-| `/mais` | `MaisMenuPage` |
-| `/mais/correcao` | `CorrigirProvaPage` |
-| `/mais/correcao/resultado/:correcaoId` | `CorrecaoResultadoPage` |
-| `/mais/resultados` | `ResultadosPage` |
-| `/mais/resultados/:alunoId` | `NotaAlunoPage` |
-| `/mais/estatisticas` | `EstatisticasPage` |
+**Pré-requisito:** detalhe da turma.
 
-### 6.1 Corrigir prova
-
-1. Câmera (ou digitar código) lê QR individual
-2. App identifica prova, variação, aluno
-3. Professor marca A–D por questão (ordem da variação)
-4. `corrigir` → nota vs `gabaritoRemapeado` → RTDB (`professorId`) → tela de resultado
-
-OMR da folha = N3 (ainda não).
-
-### 6.2 Resultados
-
-1. Lista correções do professor (só com aluno existente)
-2. Toque → nota do aluno
-3. **Simular resultado:** aluno real **sem** correção + prova da turma → respostas aleatórias → `corrigir` (demo)
-
-### 6.3 Estatísticas
-
-Gráfico / métricas a partir de `correcoes.listAll()` do professor.
-
-**Dados:** `correcoes` filtradas por `professorId`.
+1. Ícone upload → escolher CSV → prévia → importar válidos.
 
 ---
 
-## Mapa rápido rota → função
+## 7. Questão CRUD
 
-| Área | Função |
-|------|--------|
-| Auth | Login / cadastro professor |
-| Home | Atalhos + logout |
-| Turmas | CRUD turma/aluno + CSV |
-| Questões | CRUD banco |
-| Provas | Montagem, turma, variações, PDF/QR |
-| Mais | Correção pós-QR, resultados, estatísticas |
+1. Aba **Questões** → campo **Buscar** (opcional).
+2. FAB nova → enunciado, A–D, gabarito → salvar; editar/excluir na lista.
+
+---
+
+## 8. Prova
+
+**Pré-requisito:** [§4](#4-turma-crud) + [§7](#7-questão-crud).
+
+### 8.1 Criar (um passo até o detalhe)
+
+1. **Provas** → FAB **Nova prova**.
+2. Título + **Turma** + check questões → **Salvar prova** → **detalhe** (sem tela extra de ordem).
+3. Se quiser reordenar depois: detalhe → **Questões e ordem**.
+
+### 8.2 Turma / excluir
+
+1. Detalhe → dropdown **Turma da prova** (única tela que edita turma).
+2. Lista → lixeira → confirma exclusão.
+
+---
+
+## 9. Variações
+
+**Pré-requisito:** prova com turma ([§8](#8-prova)) e alunos ([§5](#5-aluno-crud)/[§6](#6-importar-csv)).
+
+1. Detalhe → **Variações / embaralhamento** (turma já vem da prova; sem reescolher).
+2. Switches de embaralhar → marca alunos → **Gerar selecionados** ou **Gerar para toda a turma**.
+3. Snackbar **Imprimir** → vai ao hub de PDF ([§10](#10-imprimir--pdf)); ou toca item → preview.
+
+---
+
+## 10. Imprimir / PDF
+
+**Pré-requisito:** [§8](#8-prova).
+
+1. Detalhe → **um** card **Imprimir / PDF**.
+2. Na mesma tela:
+   - **Prova + folha geral** → imprimir/compartilhar;
+   - **Só folha geral** → imprimir;
+   - **Por aluno / turma** → **Escolher aluno e imprimir** → individualização ([§11](#11-individualização)).
+
+`/folha` redireciona para este hub.
+
+---
+
+## 11. Individualização
+
+**Pré-requisito:** turma da prova definida no detalhe ([§8.2](#82-turma--excluir)).
+
+1. Hub Imprimir → **Escolher aluno e imprimir** (ou rota direta).
+2. Vê turma (somente leitura) → marca **aluno** (radio) → QR / **Copiar código**.
+3. PDF deste aluno ou PDF da turma inteira.
+
+---
+
+## 12. Corrigir
+
+**Pré-requisito:** folha individual ([§11](#11-individualização)).
+
+1. Aba **Corrigir** (1 toque; sem menu Mais).
+2. Câmera no QR **ou** **Digitar código** (código da §11).
+3. Marca A–D → **Corrigir** → resultado.
+4. AppBar → **Resultados** quando quiser a lista.
+
+---
+
+## 13. Resultados (+ estatísticas)
+
+**Pré-requisito:** [§1](#1-login); correções via [§12](#12-corrigir) ou simular.
+
+1. Card **Resultados** no Início **ou** AppBar em Corrigir → `/mais/resultados`.
+2. Vê média, **gráfico de desempenho** e lista → toca aluno para detalhe.
+3. **Simular resultado** (ícone) se quiser demo com aluno real sem correção.
+
+`/mais/estatisticas` redireciona para esta tela.
+
+---
+
+## Índice de rotas
+
+| Rota | Uso |
+|------|-----|
+| `/login`, `/cadastro` | Auth |
+| `/home` | Atalhos |
+| `/turmas…` | Turmas / CSV |
+| `/questoes…` | Questões |
+| `/provas…` | Prova / variações / imprimir |
+| `/mais/correcao` | Aba Corrigir |
+| `/mais/resultados` | Notas + gráfico |
