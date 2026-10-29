@@ -6,6 +6,7 @@ import 'package:meu_app/core/widgets/confirm_delete_dialog.dart';
 import 'package:meu_app/core/widgets/ellipsis_text.dart';
 import 'package:meu_app/core/widgets/empty_state.dart';
 import 'package:meu_app/core/widgets/feedback.dart';
+import 'package:meu_app/shared/models/prova.dart';
 import 'package:meu_app/shared/models/questao.dart';
 
 final questaoQueryProvider = StateProvider<String>((Ref ref) => '');
@@ -66,7 +67,7 @@ class QuestoesListPage extends ConsumerWidget {
                 return ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                   itemCount: questoes.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (BuildContext context, int index) {
                     final Questao q = questoes[index];
                     return Material(
@@ -114,6 +115,26 @@ class QuestoesListPage extends ConsumerWidget {
                                 child: IconButton(
                                   icon: const Icon(Icons.delete_outline),
                                   onPressed: () async {
+                                    final List<String> usadaEm = (await ref
+                                            .read(provaRepositoryProvider)
+                                            .listAll())
+                                        .where((Prova p) =>
+                                            p.questaoIds.contains(q.id))
+                                        .map((Prova p) => '"${p.titulo}"')
+                                        .toList();
+                                    if (usadaEm.isNotEmpty) {
+                                      if (context.mounted) {
+                                        showErrorSnackBar(
+                                          context,
+                                          'Questão usada em ${usadaEm.join(', ')}. '
+                                          'Tire-a dessas provas antes de excluir.',
+                                        );
+                                      }
+                                      return;
+                                    }
+                                    if (!context.mounted) {
+                                      return;
+                                    }
                                     final bool ok = await showConfirmDeleteDialog(
                                       context: context,
                                       title: 'Excluir questão?',

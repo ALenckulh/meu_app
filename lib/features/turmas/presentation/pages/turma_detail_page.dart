@@ -70,7 +70,7 @@ class TurmaDetailPage extends ConsumerWidget {
           return ListView.separated(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
             itemCount: alunos.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            separatorBuilder: (_, _) => const SizedBox(height: 10),
             itemBuilder: (BuildContext context, int index) {
               final Aluno aluno = alunos[index];
               return Material(

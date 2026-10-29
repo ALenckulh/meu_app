@@ -54,7 +54,30 @@ class _AlunoFormPageState extends ConsumerState<AlunoFormPage> {
     super.dispose();
   }
 
+  bool _salvando = false;
+
+  /// Evita gravar duas vezes no clique duplo e mostra falha do Firebase.
   Future<void> _save() async {
+    if (_salvando) {
+      return;
+    }
+    setState(() {
+      _salvando = true;
+    });
+    try {
+      await _salvar();
+    } catch (e) {
+      if (mounted) {
+        showErrorSnackBar(context, 'Não foi possível salvar. Tente de novo. ($e)');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _salvando = false);
+      }
+    }
+  }
+
+  Future<void> _salvar() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -127,7 +150,7 @@ class _AlunoFormPageState extends ConsumerState<AlunoFormPage> {
                         const SizedBox(height: 28),
                         FilledButton(
                           key: const Key('btn-salvar-aluno'),
-                          onPressed: _save,
+                          onPressed: _salvando ? null : _save,
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: const StadiumBorder(),

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meu_app/core/di/providers.dart';
+import 'package:meu_app/core/widgets/confirm_delete_dialog.dart';
 import 'package:meu_app/core/widgets/feedback.dart';
+import 'package:meu_app/features/provas/domain/repositories/prova_repository.dart';
 import 'package:meu_app/shared/models/prova.dart';
 import 'package:meu_app/shared/models/questao.dart';
 
@@ -54,16 +56,42 @@ class _ProvaQuestoesPageState extends ConsumerState<ProvaQuestoesPage> {
     if (_prova == null) {
       return;
     }
-    await ref.read(provaRepositoryProvider).update(
-          _prova!.copyWith(
-            questaoIds: _ordenadas.map((Questao q) => q.id).toList(),
-          ),
-        );
+    final List<String> ids = _ordenadas.map((Questao q) => q.id).toList();
+    if (!await _confirmarInvalidarVariacoes()) {
+      return;
+    }
+    final Prova atualizada = _prova!.copyWith(questaoIds: ids);
+    await ref.read(provaRepositoryProvider).update(atualizada);
+    _prova = atualizada;
     ref.read(listVersionProvider.notifier).bump();
     if (!mounted) {
       return;
     }
     showSuccessSnackBar(context, 'Ordem das questões salva.');
+  }
+
+  /// Variações guardam a lista de questões: mudar a prova as deixa velhas.
+  Future<bool> _confirmarInvalidarVariacoes() async {
+    final ProvaRepository repo = ref.read(provaRepositoryProvider);
+    final int total = (await repo.listVariacoes(widget.provaId)).length;
+    if (total == 0) {
+      return true;
+    }
+    if (!mounted) {
+      return false;
+    }
+    final bool ok = await showConfirmDeleteDialog(
+      context: context,
+      title: 'Alterar prova com variações?',
+      message: 'Esta prova já tem $total variação(ões) gerada(s). Elas serão '
+          'apagadas e as folhas impressas deixam de valer; gere e imprima '
+          'de novo depois.',
+      confirmLabel: 'Alterar e apagar',
+    );
+    if (ok) {
+      await repo.deleteVariacoes(widget.provaId);
+    }
+    return ok;
   }
 
   @override

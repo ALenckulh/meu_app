@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meu_app/core/di/providers.dart';
+import 'package:meu_app/core/widgets/confirm_delete_dialog.dart';
 import 'package:meu_app/core/widgets/feedback.dart';
 import 'package:meu_app/core/widgets/info_card.dart';
 import 'package:meu_app/core/widgets/section_header.dart';
@@ -92,7 +93,32 @@ class _ProvaVariacoesPageState extends ConsumerState<ProvaVariacoesPage> {
     }
     final List<String> ids = alunoIds.toList();
     if (ids.isEmpty) {
-      showSuccessSnackBar(context, 'Selecione ao menos um aluno.');
+      showErrorSnackBar(context, 'Selecione ao menos um aluno.');
+      return;
+    }
+    final Set<String> comVariacao = (await ref
+            .read(provaRepositoryProvider)
+            .listVariacoes(widget.provaId))
+        .map((VariacaoDeProva v) => v.alunoId)
+        .toSet();
+    final int substituidas = ids.where(comVariacao.contains).length;
+    if (substituidas > 0) {
+      if (!mounted) {
+        return;
+      }
+      final bool ok = await showConfirmDeleteDialog(
+        context: context,
+        title: 'Gerar de novo?',
+        message: '$substituidas aluno(s) já têm variação. A nova substitui a '
+            'anterior e as folhas já impressas desses alunos deixam de valer '
+            'na correção.',
+        confirmLabel: 'Gerar de novo',
+      );
+      if (!ok) {
+        return;
+      }
+    }
+    if (!mounted) {
       return;
     }
     setState(() => _gerando = true);
@@ -132,7 +158,7 @@ class _ProvaVariacoesPageState extends ConsumerState<ProvaVariacoesPage> {
     } catch (e) {
       if (mounted) {
         setState(() => _gerando = false);
-        showSuccessSnackBar(context, 'Erro ao gerar: $e');
+        showErrorSnackBar(context, 'Erro ao gerar: $e');
       }
     }
   }

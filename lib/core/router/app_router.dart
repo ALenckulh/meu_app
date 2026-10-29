@@ -20,7 +20,6 @@ import 'package:meu_app/features/provas/presentation/pages/provas_list_page.dart
 import 'package:meu_app/features/provas/presentation/pages/variacao_preview_page.dart';
 import 'package:meu_app/features/questoes/presentation/pages/questao_form_page.dart';
 import 'package:meu_app/features/questoes/presentation/pages/questoes_list_page.dart';
-import 'package:meu_app/features/resultados/presentation/pages/nota_aluno_page.dart';
 import 'package:meu_app/features/resultados/presentation/pages/resultados_page.dart';
 import 'package:meu_app/features/turmas/presentation/pages/turma_detail_page.dart';
 import 'package:meu_app/features/turmas/presentation/pages/turma_form_page.dart';
@@ -258,10 +257,10 @@ final goRouterProvider = Provider<GoRouter>((Ref ref) {
                 const ResultadosPage(),
             routes: <RouteBase>[
               GoRoute(
-                path: ':alunoId',
+                path: ':correcaoId',
                 builder: (BuildContext context, GoRouterState state) =>
-                    NotaAlunoPage(
-                  alunoId: state.pathParameters['alunoId']!,
+                    CorrecaoResultadoPage(
+                  correcaoId: state.pathParameters['correcaoId']!,
                 ),
               ),
             ],

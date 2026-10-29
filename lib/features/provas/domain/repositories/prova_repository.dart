@@ -9,6 +9,11 @@ abstract class ProvaRepository {
   Future<void> delete(String id);
   Future<List<VariacaoDeProva>> listVariacoes(String provaId);
   Future<VariacaoDeProva?> getVariacaoById(String id);
+
+  /// Apaga todas as variações da prova (folhas impressas deixam de valer).
+  Future<void> deleteVariacoes(String provaId);
+
+  /// Gera a variação do aluno, substituindo a anterior dele nesta prova.
   Future<VariacaoDeProva> gerarVariacao({
     required String provaId,
     required String alunoId,

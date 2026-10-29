@@ -26,11 +26,15 @@ class _FolhaIdentificada {
     required this.prova,
     required this.variacao,
     this.aluno,
+    this.anterior,
   });
 
   final Prova prova;
   final VariacaoDeProva variacao;
   final Aluno? aluno;
+
+  /// Correção já salva desta folha — corrigir de novo substitui a nota.
+  final Correcao? anterior;
 }
 
 class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
@@ -101,7 +105,7 @@ class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
         _falhar(
           'Folha geral da prova "${prova.titulo}". Ela não identifica o '
           'aluno — para a correção, imprima as folhas individuais '
-          'em Provas → Gerar → Individualização.',
+          'em Provas → Imprimir / PDF → Escolher aluno e imprimir.',
         );
         return;
       }
@@ -115,11 +119,18 @@ class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
           break;
         }
       }
-      if (variacao == null) {
-        _falhar('A versão da prova deste QR Code não foi encontrada.');
+      if (variacao == null || variacao.alunoId != qr.alunoId) {
+        _falhar(
+          'Esta folha não vale mais: a prova "${prova.titulo}" foi gerada '
+          'de novo para este aluno. Imprima a folha atual em '
+          'Provas → Imprimir / PDF.',
+        );
         return;
       }
       final VariacaoDeProva encontrada = variacao;
+      final Correcao? anterior = await ref
+          .read(correcaoRepositoryProvider)
+          .getByVariacao(encontrada.id);
 
       final Aluno? aluno =
           await ref.read(alunoRepositoryProvider).getById(qr.alunoId!);
@@ -141,9 +152,15 @@ class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
           prova: prova,
           variacao: encontrada,
           aluno: aluno,
+          anterior: anterior,
         );
         _questoes = questoes;
-        _respostas = List<int?>.filled(encontrada.ordemQuestoes.length, null);
+        _respostas = List<int?>.generate(
+          encontrada.ordemQuestoes.length,
+          (int i) => anterior != null && i < anterior.respostas.length
+              ? anterior.respostas[i]
+              : null,
+        );
         _processando = false;
       });
     } catch (e) {
@@ -200,7 +217,7 @@ class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
     }
     final String? professorId = ref.read(authSessionProvider)?.id;
     if (professorId == null) {
-      showSuccessSnackBar(context, 'Sessão inválida. Faça login novamente.');
+      showErrorSnackBar(context, 'Sessão inválida. Faça login novamente.');
       return;
     }
     setState(() => _corrigindo = true);
@@ -221,7 +238,7 @@ class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
     } catch (e) {
       if (mounted) {
         setState(() => _corrigindo = false);
-        showSuccessSnackBar(context, 'Erro ao corrigir: $e');
+        showErrorSnackBar(context, 'Erro ao corrigir: $e');
       }
     }
   }
@@ -364,6 +381,23 @@ class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
                           color: colors.onSurfaceVariant,
                         ),
                       ),
+                      if (folha.anterior != null) ...<Widget>[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: <Widget>[
+                            Icon(Icons.info, size: 18, color: colors.tertiary),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                'Já corrigida (nota '
+                                '${folha.anterior!.nota.toStringAsFixed(1)}). '
+                                'Corrigir de novo substitui a nota.',
+                                style: theme.textTheme.bodySmall,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                       const SizedBox(height: 8),
                       Text(
                         'Informe a alternativa marcada em cada questão '

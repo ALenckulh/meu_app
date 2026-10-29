@@ -54,7 +54,31 @@ class _ProvaFormPageState extends ConsumerState<ProvaFormPage> {
     super.dispose();
   }
 
+  bool _salvando = false;
+
+  /// Evita gravar duas vezes no clique duplo e mostra falha do Firebase.
   Future<void> _save() async {
+    if (_salvando) {
+      return;
+    }
+    setState(() {
+      _salvando = true;
+      _error = null;
+    });
+    try {
+      await _salvar();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = 'Não foi possível salvar. Tente de novo. ($e)');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _salvando = false);
+      }
+    }
+  }
+
+  Future<void> _salvar() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -208,7 +232,7 @@ class _ProvaFormPageState extends ConsumerState<ProvaFormPage> {
                   _BottomBar(
                     child: FilledButton.icon(
                       key: const Key('btn-salvar-prova'),
-                      onPressed: _save,
+                      onPressed: _salvando ? null : _save,
                       icon: const Icon(Icons.arrow_forward),
                       label: const Text('Salvar prova'),
                     ),

@@ -8,6 +8,7 @@ class Correcao {
     required this.nota,
     required this.acertos,
     required this.totalQuestoes,
+    this.gabarito = const <int>[],
   });
 
   final String id;
@@ -21,9 +22,15 @@ class Correcao {
   final int acertos;
   final int totalQuestoes;
 
+  /// Alternativa correta (0–3) por posição, congelada no momento da correção.
+  /// Vazio em correções antigas — nesse caso use a variação.
+  final List<int> gabarito;
+
   factory Correcao.fromMap(String id, Map<dynamic, dynamic> map) {
     final List<dynamic> rawResp =
         map['respostas'] as List<dynamic>? ?? <dynamic>[];
+    final List<dynamic> rawGab =
+        map['gabarito'] as List<dynamic>? ?? <dynamic>[];
     return Correcao(
       id: id,
       professorId: map['professorId'] as String? ?? '',
@@ -33,6 +40,7 @@ class Correcao {
       nota: (map['nota'] as num?)?.toDouble() ?? 0,
       acertos: (map['acertos'] as num?)?.toInt() ?? 0,
       totalQuestoes: (map['totalQuestoes'] as num?)?.toInt() ?? 0,
+      gabarito: rawGab.map((dynamic e) => (e as num).toInt()).toList(),
     );
   }
 
@@ -45,6 +53,7 @@ class Correcao {
       'nota': nota,
       'acertos': acertos,
       'totalQuestoes': totalQuestoes,
+      'gabarito': gabarito,
     };
   }
 }

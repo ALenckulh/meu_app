@@ -79,20 +79,22 @@ class ProvaRtdbRepository implements ProvaRepository {
   @override
   Future<void> delete(String id) async {
     await _db.ref(RtdbPaths.prova(id)).remove();
-    final DataSnapshot vars = await _db
-        .ref(RtdbPaths.variacoes)
-        .orderByChild('provaId')
-        .equalTo(id)
-        .get();
-    if (!vars.exists || vars.value == null) {
-      return;
+    await deleteVariacoes(id);
+  }
+
+  @override
+  Future<void> deleteVariacoes(String provaId) async {
+    await _removerVariacoes(await listVariacoes(provaId));
+  }
+
+  Future<void> _removerVariacoes(Iterable<VariacaoDeProva> variacoes) async {
+    final Map<String, dynamic> updates = <String, dynamic>{
+      for (final VariacaoDeProva v in variacoes)
+        '${RtdbPaths.variacoes}/${v.id}': null,
+    };
+    if (updates.isNotEmpty) {
+      await _db.ref().update(updates);
     }
-    final Map<dynamic, dynamic> map = vars.value as Map<dynamic, dynamic>;
-    final Map<String, dynamic> updates = <String, dynamic>{};
-    for (final dynamic key in map.keys) {
-      updates['${RtdbPaths.variacoes}/$key'] = null;
-    }
-    await _db.ref().update(updates);
   }
 
   @override
@@ -141,20 +143,18 @@ class ProvaRtdbRepository implements ProvaRepository {
       throw StateError('Prova não encontrada: $provaId');
     }
 
-    final List<String> ordemQuestoes = List<String>.from(prova.questaoIds);
-    if (embaralharQuestoes) {
-      ordemQuestoes.shuffle(_random);
-    }
-
+    final List<String> ordemQuestoes = <String>[];
     final Map<String, List<int>> ordemAlternativas = <String, List<int>>{};
     final Map<String, int> gabaritoRemapeado = <String, int>{};
 
-    for (final String questaoId in ordemQuestoes) {
+    for (final String questaoId in prova.questaoIds) {
       final DataSnapshot qSnap =
           await _db.ref(RtdbPaths.questao(questaoId)).get();
+      // Questão excluída do banco não entra na folha (ficaria sem gabarito).
       if (!qSnap.exists || qSnap.value == null) {
         continue;
       }
+      ordemQuestoes.add(questaoId);
       final Questao questao = Questao.fromMap(
         questaoId,
         Map<dynamic, dynamic>.from(qSnap.value as Map),
@@ -166,6 +166,16 @@ class ProvaRtdbRepository implements ProvaRepository {
       ordemAlternativas[questaoId] = perm;
       gabaritoRemapeado[questaoId] = perm.indexOf(questao.gabaritoIndex);
     }
+    if (ordemQuestoes.isEmpty) {
+      throw StateError('A prova não tem questões válidas.');
+    }
+    if (embaralharQuestoes) {
+      ordemQuestoes.shuffle(_random);
+    }
+
+    final List<VariacaoDeProva> anteriores = (await listVariacoes(provaId))
+        .where((VariacaoDeProva v) => v.alunoId == alunoId)
+        .toList();
 
     final String id = _uuid.v4();
     final VariacaoDeProva variacao = VariacaoDeProva(
@@ -177,6 +187,7 @@ class ProvaRtdbRepository implements ProvaRepository {
       gabaritoRemapeado: gabaritoRemapeado,
     );
     await _db.ref(RtdbPaths.variacao(id)).set(variacao.toMap());
+    await _removerVariacoes(anteriores);
     return variacao;
   }
 }

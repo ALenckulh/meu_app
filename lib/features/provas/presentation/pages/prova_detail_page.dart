@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meu_app/core/di/providers.dart';
+import 'package:meu_app/core/widgets/confirm_delete_dialog.dart';
 import 'package:meu_app/core/widgets/feedback.dart';
 import 'package:meu_app/core/widgets/info_card.dart';
 import 'package:meu_app/core/widgets/section_header.dart';
@@ -23,6 +24,9 @@ class _ProvaDetailPageState extends ConsumerState<ProvaDetailPage> {
   String? _turmaId;
   bool _loading = true;
   bool _salvandoTurma = false;
+
+  /// Muda ao cancelar a troca, para o dropdown voltar à turma salva.
+  int _turmaCancelada = 0;
 
   @override
   void initState() {
@@ -69,6 +73,30 @@ class _ProvaDetailPageState extends ConsumerState<ProvaDetailPage> {
     if (_prova == null || turmaId == null || turmaId == _turmaId) {
       return;
     }
+    final int variacoes = (await ref
+            .read(provaRepositoryProvider)
+            .listVariacoes(widget.provaId))
+        .length;
+    if (variacoes > 0) {
+      if (!mounted) {
+        return;
+      }
+      final bool ok = await showConfirmDeleteDialog(
+        context: context,
+        title: 'Trocar a turma?',
+        message: 'As $variacoes variação(ões) geradas para a turma atual serão '
+            'apagadas e as folhas impressas deixam de valer.',
+        confirmLabel: 'Trocar turma',
+      );
+      if (!ok) {
+        setState(() => _turmaCancelada++);
+        return;
+      }
+      await ref.read(provaRepositoryProvider).deleteVariacoes(widget.provaId);
+    }
+    if (!mounted) {
+      return;
+    }
     setState(() {
       _turmaId = turmaId;
       _salvandoTurma = true;
@@ -88,7 +116,7 @@ class _ProvaDetailPageState extends ConsumerState<ProvaDetailPage> {
     } catch (e) {
       if (mounted) {
         setState(() => _salvandoTurma = false);
-        showSuccessSnackBar(context, 'Erro ao salvar turma: $e');
+        showErrorSnackBar(context, 'Erro ao salvar turma: $e');
       }
     }
   }
@@ -119,7 +147,7 @@ class _ProvaDetailPageState extends ConsumerState<ProvaDetailPage> {
                       children: <Widget>[
                         DropdownButtonFormField<String>(
                           key: ValueKey<String>(
-                              'select-prova-turma-${_turmaId ?? 'none'}'),
+                              'select-prova-turma-${_turmaId ?? 'none'}-$_turmaCancelada'),
                           initialValue: _turmaId,
                           decoration: InputDecoration(
                             labelText: 'Turma da prova',

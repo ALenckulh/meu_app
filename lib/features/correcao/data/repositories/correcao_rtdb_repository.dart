@@ -4,6 +4,7 @@ import 'package:meu_app/core/data/rtdb.dart';
 import 'package:meu_app/core/data/rtdb_paths.dart';
 import 'package:meu_app/features/correcao/domain/repositories/correcao_repository.dart';
 import 'package:meu_app/shared/models/correcao.dart';
+import 'package:meu_app/shared/models/questao.dart';
 import 'package:meu_app/shared/models/variacao_de_prova.dart';
 import 'package:uuid/uuid.dart';
 
@@ -47,24 +48,9 @@ class CorrecaoRtdbRepository implements CorrecaoRepository {
   }
 
   @override
-  Future<Correcao?> getByAluno(String alunoId) async {
-    final DataSnapshot snap = await _db
-        .ref(RtdbPaths.correcoes)
-        .orderByChild('alunoId')
-        .equalTo(alunoId)
-        .get();
-    if (!snap.exists || snap.value == null) {
-      return null;
-    }
-    final Map<dynamic, dynamic> map =
-        snap.value as Map<dynamic, dynamic>;
-    final String? uid = _uid;
-    for (final MapEntry<dynamic, dynamic> e in map.entries) {
-      final Correcao c = Correcao.fromMap(
-        e.key.toString(),
-        Map<dynamic, dynamic>.from(e.value as Map),
-      );
-      if (uid == null || c.professorId == uid || c.professorId.isEmpty) {
+  Future<Correcao?> getByVariacao(String variacaoId) async {
+    for (final Correcao c in await listAll()) {
+      if (c.variacaoId == variacaoId) {
         return c;
       }
     }
@@ -112,15 +98,19 @@ class CorrecaoRtdbRepository implements CorrecaoRepository {
       );
     }
 
+    // Gabarito vem da questão atual (não do snapshot da variação), para que
+    // corrigir o gabarito de uma questão valha para as próximas correções.
+    final List<int> gabarito = <int>[];
     int acertos = 0;
     for (int i = 0; i < variacao.ordemQuestoes.length; i++) {
       final String questaoId = variacao.ordemQuestoes[i];
-      final int gabarito = variacao.gabaritoRemapeado[questaoId] ?? 0;
       final int marcada = respostas[i];
       if (marcada < 0 || marcada > 3) {
         throw ArgumentError('Resposta inválida na posição $i: $marcada');
       }
-      if (marcada == gabarito) {
+      final int correta = await _gabaritoAtual(variacao, questaoId);
+      gabarito.add(correta);
+      if (marcada == correta) {
         acertos++;
       }
     }
@@ -128,7 +118,7 @@ class CorrecaoRtdbRepository implements CorrecaoRepository {
     final int total = variacao.ordemQuestoes.length;
     final double nota = total == 0 ? 0 : (acertos / total) * 10;
 
-    final Correcao? existing = await getByAluno(alunoId);
+    final Correcao? existing = await getByVariacao(variacaoId);
     final String id = existing?.id ?? _uuid.v4();
     final Correcao correcao = Correcao(
       id: id,
@@ -139,8 +129,25 @@ class CorrecaoRtdbRepository implements CorrecaoRepository {
       nota: double.parse(nota.toStringAsFixed(1)),
       acertos: acertos,
       totalQuestoes: total,
+      gabarito: gabarito,
     );
     await _db.ref(RtdbPaths.correcao(id)).set(correcao.toMap());
     return correcao;
+  }
+
+  Future<int> _gabaritoAtual(VariacaoDeProva variacao, String questaoId) async {
+    final int salvo = variacao.gabaritoRemapeado[questaoId] ?? 0;
+    final DataSnapshot snap = await _db.ref(RtdbPaths.questao(questaoId)).get();
+    if (!snap.exists || snap.value == null) {
+      return salvo;
+    }
+    final Questao questao = Questao.fromMap(
+      questaoId,
+      Map<dynamic, dynamic>.from(snap.value as Map),
+    );
+    final List<int> perm =
+        variacao.ordemAlternativas[questaoId] ?? const <int>[0, 1, 2, 3];
+    final int idx = perm.indexOf(questao.gabaritoIndex);
+    return idx < 0 ? salvo : idx;
   }
 }

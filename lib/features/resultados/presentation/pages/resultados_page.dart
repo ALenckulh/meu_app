@@ -23,34 +23,56 @@ class ResultadosPage extends ConsumerStatefulWidget {
 }
 
 class _ResultadoRow {
-  const _ResultadoRow({required this.correcao, required this.aluno});
+  const _ResultadoRow({
+    required this.correcao,
+    required this.aluno,
+    this.prova,
+  });
 
   final Correcao correcao;
   final Aluno aluno;
+  final Prova? prova;
 }
 
 class _ResultadosPageState extends ConsumerState<ResultadosPage> {
   final Random _random = Random();
   bool _simulando = false;
 
+  // Guardado para não recarregar tudo a cada setState (ex.: _simulando).
+  Future<List<_ResultadoRow>>? _rows;
+  int? _rowsVersion;
+
   Future<List<_ResultadoRow>> _loadRows() async {
     final List<Correcao> correcoes =
         await ref.read(correcaoRepositoryProvider).listAll();
+    final Map<String, Prova> provaPorVariacao = <String, Prova>{};
+    for (final Prova p in await ref.read(provaRepositoryProvider).listAll()) {
+      for (final VariacaoDeProva v
+          in await ref.read(provaRepositoryProvider).listVariacoes(p.id)) {
+        provaPorVariacao[v.id] = p;
+      }
+    }
     final List<_ResultadoRow> rows = <_ResultadoRow>[];
     for (final Correcao c in correcoes) {
       final Aluno? aluno =
           await ref.read(alunoRepositoryProvider).getById(c.alunoId);
       if (aluno != null) {
-        rows.add(_ResultadoRow(correcao: c, aluno: aluno));
+        rows.add(_ResultadoRow(
+          correcao: c,
+          aluno: aluno,
+          prova: provaPorVariacao[c.variacaoId],
+        ));
       }
     }
+    rows.sort((_ResultadoRow a, _ResultadoRow b) =>
+        a.aluno.nome.toLowerCase().compareTo(b.aluno.nome.toLowerCase()));
     return rows;
   }
 
   Future<void> _simularResultado() async {
     final String? professorId = ref.read(authSessionProvider)?.id;
     if (professorId == null) {
-      showSuccessSnackBar(context, 'Sessão inválida. Faça login novamente.');
+      showErrorSnackBar(context, 'Sessão inválida. Faça login novamente.');
       return;
     }
     setState(() => _simulando = true);
@@ -65,57 +87,57 @@ class _ResultadosPageState extends ConsumerState<ResultadosPage> {
         );
       }
 
-      final List<Correcao> existentes =
-          await ref.read(correcaoRepositoryProvider).listAll();
-      final Set<String> jaCorrigidos =
-          existentes.map((Correcao c) => c.alunoId).toSet();
-
-      final List<Aluno> candidatos = todos
-          .where((Aluno a) => !jaCorrigidos.contains(a.id))
+      final List<Prova> provas = (await ref
+              .read(provaRepositoryProvider)
+              .listAll())
+          .where((Prova p) => p.questaoIds.isNotEmpty)
           .toList();
-      if (candidatos.isEmpty) {
-        if (mounted) {
-          showSuccessSnackBar(context, 'Nenhum aluno sem correção.');
+      final Set<String> corrigidas = (await ref
+              .read(correcaoRepositoryProvider)
+              .listAll())
+          .map((Correcao c) => c.variacaoId)
+          .toSet();
+
+      // Pares (aluno, prova da turma dele) que ainda não têm correção.
+      final List<({Aluno aluno, Prova prova, VariacaoDeProva? variacao})>
+          candidatos =
+          <({Aluno aluno, Prova prova, VariacaoDeProva? variacao})>[];
+      for (final Prova p in provas) {
+        final List<VariacaoDeProva> vars =
+            await ref.read(provaRepositoryProvider).listVariacoes(p.id);
+        for (final Aluno a in todos.where((Aluno a) => a.turmaId == p.turmaId)) {
+          VariacaoDeProva? variacao;
+          for (final VariacaoDeProva v in vars) {
+            if (v.alunoId == a.id) {
+              variacao = v;
+              break;
+            }
+          }
+          if (variacao == null || !corrigidas.contains(variacao.id)) {
+            candidatos.add((aluno: a, prova: p, variacao: variacao));
+          }
         }
-        return;
       }
-
-      final Aluno aluno = candidatos[_random.nextInt(candidatos.length)];
-
-      final List<Prova> provas =
-          await ref.read(provaRepositoryProvider).listAll();
-      final List<Prova> provasTurma = provas
-          .where(
-            (Prova p) =>
-                p.turmaId == aluno.turmaId && p.questaoIds.isNotEmpty,
-          )
-          .toList();
-      if (provasTurma.isEmpty) {
+      if (candidatos.isEmpty) {
         if (mounted) {
           showSuccessSnackBar(
             context,
-            'Nenhuma prova com questões para a turma deste aluno.',
+            'Todos os alunos já têm correção nas provas da turma.',
           );
         }
         return;
       }
 
-      final Prova prova = provasTurma[_random.nextInt(provasTurma.length)];
-      final List<VariacaoDeProva> variacoes =
-          await ref.read(provaRepositoryProvider).listVariacoes(prova.id);
-      VariacaoDeProva? variacao;
-      for (final VariacaoDeProva v in variacoes) {
-        if (v.alunoId == aluno.id) {
-          variacao = v;
-          break;
-        }
-      }
-      variacao ??= await ref.read(provaRepositoryProvider).gerarVariacao(
-            provaId: prova.id,
-            alunoId: aluno.id,
-            embaralharQuestoes: true,
-            embaralharAlternativas: true,
-          );
+      final ({Aluno aluno, Prova prova, VariacaoDeProva? variacao}) escolhido =
+          candidatos[_random.nextInt(candidatos.length)];
+      final Aluno aluno = escolhido.aluno;
+      final VariacaoDeProva variacao = escolhido.variacao ??
+          await ref.read(provaRepositoryProvider).gerarVariacao(
+                provaId: escolhido.prova.id,
+                alunoId: aluno.id,
+                embaralharQuestoes: true,
+                embaralharAlternativas: true,
+              );
 
       final List<int> respostas = List<int>.generate(
         variacao.ordemQuestoes.length,
@@ -138,10 +160,10 @@ class _ResultadosPageState extends ConsumerState<ResultadosPage> {
         context,
         'Resultado simulado para ${aluno.nome}.',
       );
-      await context.push('/mais/correcao/resultado/${correcao.id}');
+      await context.push('/mais/resultados/${correcao.id}');
     } catch (e) {
       if (mounted) {
-        showSuccessSnackBar(context, 'Erro ao simular: $e');
+        showErrorSnackBar(context, 'Erro ao simular: $e');
       }
     } finally {
       if (mounted) {
@@ -152,9 +174,13 @@ class _ResultadosPageState extends ConsumerState<ResultadosPage> {
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(listVersionProvider);
+    final int version = ref.watch(listVersionProvider);
+    if (_rows == null || _rowsVersion != version) {
+      _rowsVersion = version;
+      _rows = _loadRows();
+    }
     return FutureBuilder<List<_ResultadoRow>>(
-      future: _loadRows(),
+      future: _rows,
       builder: (
         BuildContext context,
         AsyncSnapshot<List<_ResultadoRow>> snapshot,
@@ -341,7 +367,7 @@ class _ResultadosPageState extends ConsumerState<ResultadosPage> {
                         child: Card(
                           child: InkWell(
                             onTap: () =>
-                                context.push('/mais/resultados/${c.alunoId}'),
+                                context.push('/mais/resultados/${c.id}'),
                             child: Padding(
                               padding: const EdgeInsets.all(14),
                               child: Row(
@@ -361,7 +387,10 @@ class _ResultadosPageState extends ConsumerState<ResultadosPage> {
                                         ),
                                         const SizedBox(height: 2),
                                         Text(
-                                          '${c.acertos}/${c.totalQuestoes} acertos',
+                                          '${row.prova?.titulo ?? 'Prova removida'}'
+                                          ' · ${c.acertos}/${c.totalQuestoes} acertos',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                           style: theme.textTheme.bodySmall
                                               ?.copyWith(
                                             color: colors.onSurfaceVariant,

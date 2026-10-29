@@ -7,6 +7,7 @@ import 'package:meu_app/core/widgets/section_header.dart';
 import 'package:meu_app/core/widgets/stat_tile.dart';
 import 'package:meu_app/shared/models/aluno.dart';
 import 'package:meu_app/shared/models/correcao.dart';
+import 'package:meu_app/shared/models/prova.dart';
 import 'package:meu_app/shared/models/variacao_de_prova.dart';
 
 class CorrecaoResultadoPage extends ConsumerWidget {
@@ -16,24 +17,35 @@ class CorrecaoResultadoPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return FutureBuilder<({Correcao? correcao, Aluno? aluno, VariacaoDeProva? variacao})>(
+    return FutureBuilder<({Correcao? correcao, Aluno? aluno, VariacaoDeProva? variacao, Prova? prova})>(
       future: () async {
         final Correcao? correcao =
             await ref.read(correcaoRepositoryProvider).getById(correcaoId);
         Aluno? aluno;
         VariacaoDeProva? variacao;
+        Prova? prova;
         if (correcao != null) {
           aluno =
               await ref.read(alunoRepositoryProvider).getById(correcao.alunoId);
           variacao = await ref
               .read(provaRepositoryProvider)
               .getVariacaoById(correcao.variacaoId);
+          if (variacao != null) {
+            prova = await ref
+                .read(provaRepositoryProvider)
+                .getById(variacao.provaId);
+          }
         }
-        return (correcao: correcao, aluno: aluno, variacao: variacao);
+        return (
+          correcao: correcao,
+          aluno: aluno,
+          variacao: variacao,
+          prova: prova,
+        );
       }(),
       builder: (
         BuildContext context,
-        AsyncSnapshot<({Correcao? correcao, Aluno? aluno, VariacaoDeProva? variacao})> snapshot,
+        AsyncSnapshot<({Correcao? correcao, Aluno? aluno, VariacaoDeProva? variacao, Prova? prova})> snapshot,
       ) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const Scaffold(
@@ -43,6 +55,7 @@ class CorrecaoResultadoPage extends ConsumerWidget {
         final Correcao? correcao = snapshot.data?.correcao;
         final Aluno? aluno = snapshot.data?.aluno;
         final VariacaoDeProva? variacao = snapshot.data?.variacao;
+        final Prova? prova = snapshot.data?.prova;
 
         if (correcao == null) {
           return Scaffold(
@@ -102,7 +115,7 @@ class CorrecaoResultadoPage extends ConsumerWidget {
                                 ),
                               ),
                               Text(
-                                'Respostas informadas · var ${correcao.variacaoId}',
+                                prova?.titulo ?? 'Prova removida',
                                 style: theme.textTheme.bodySmall?.copyWith(
                                   color: colors.onPrimaryContainer
                                       .withValues(alpha: 0.8),
@@ -157,9 +170,7 @@ class CorrecaoResultadoPage extends ConsumerWidget {
               const SectionHeader('Respostas identificadas'),
               ...List<Widget>.generate(correcao.respostas.length, (int i) {
                 final int marcada = correcao.respostas[i];
-                final String? qId = variacao?.ordemQuestoes[i];
-                final int? gabarito =
-                    qId == null ? null : variacao?.gabaritoRemapeado[qId];
+                final int? gabarito = _gabaritoDa(correcao, variacao, i);
                 final bool ok = gabarito != null && marcada == gabarito;
                 return _RespostaRow(
                   numero: i + 1,
@@ -174,6 +185,17 @@ class CorrecaoResultadoPage extends ConsumerWidget {
       },
     );
   }
+}
+
+/// Gabarito salvo na correção; correções antigas caem no da variação.
+int? _gabaritoDa(Correcao correcao, VariacaoDeProva? variacao, int i) {
+  if (i < correcao.gabarito.length) {
+    return correcao.gabarito[i];
+  }
+  if (variacao == null || i >= variacao.ordemQuestoes.length) {
+    return null;
+  }
+  return variacao.gabaritoRemapeado[variacao.ordemQuestoes[i]];
 }
 
 class _RespostaRow extends StatelessWidget {

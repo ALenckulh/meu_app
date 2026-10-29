@@ -46,3 +46,25 @@ void showSuccessSnackBar(BuildContext context, String message) {
     SnackBar(content: Text(message)),
   );
 }
+
+/// Erro fora de formulário (ação de lista, câmera, geração).
+void showErrorSnackBar(BuildContext context, String message) {
+  final ColorScheme colors = Theme.of(context).colorScheme;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      backgroundColor: colors.errorContainer,
+      content: Row(
+        children: <Widget>[
+          Icon(Icons.cancel, color: colors.error),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(color: colors.onErrorContainer),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
