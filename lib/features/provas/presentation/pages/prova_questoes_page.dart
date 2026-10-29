@@ -123,7 +123,7 @@ class _ProvaQuestoesPageState extends ConsumerState<ProvaQuestoesPage> {
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: colors.secondaryContainer,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Row(
                     children: <Widget>[
@@ -160,7 +160,7 @@ class _ProvaQuestoesPageState extends ConsumerState<ProvaQuestoesPage> {
                         child: Container(
                           decoration: BoxDecoration(
                             color: colors.surfaceContainerLowest,
-                            borderRadius: BorderRadius.circular(18),
+                            borderRadius: BorderRadius.circular(12),
                             boxShadow: <BoxShadow>[
                               BoxShadow(
                                 color:

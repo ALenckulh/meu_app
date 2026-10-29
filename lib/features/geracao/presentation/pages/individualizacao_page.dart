@@ -366,7 +366,7 @@ class _TimelineStep extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 color: scheme.surfaceContainerLowest,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(12),
               ),
               padding: const EdgeInsets.all(14),
               child: Column(

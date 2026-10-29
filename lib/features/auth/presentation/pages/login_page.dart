@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meu_app/core/di/providers.dart';
+import 'package:meu_app/core/widgets/brand_header.dart';
 import 'package:meu_app/core/widgets/feedback.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -64,20 +65,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
-                    Text(
-                      'Correção de Provas',
-                      style: Theme.of(context).textTheme.headlineMedium,
-                      textAlign: TextAlign.center,
+                    const BrandHeader(
+                      titulo: 'Correção de Provas',
+                      subtitulo: 'Monte provas, imprima as folhas e corrija '
+                          'pela câmera.',
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'N2 — protótipo integrado com banco de dados',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
                     if (_error != null) ...<Widget>[
                       FormErrorBanner(
                         message: _error!,

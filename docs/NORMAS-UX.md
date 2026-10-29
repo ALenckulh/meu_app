@@ -5,7 +5,7 @@ Base: normas Systextil → equivalentes Flutter/M3.
 | Norma Systextil | Flutter / M3 |
 |-----------------|--------------|
 | Design system | Material 3 (`FilledButton`, `TextField`, `NavigationBar`, `AlertDialog`) |
-| Cores | Só `ColorScheme` do tema (material-theme.zip) |
+| Cores | Só `ColorScheme` do tema (paleta Católica SC em `material_theme.dart`) |
 | Primária em ações | Botões/links; estáticos em `onSurface`/`outline` |
 | Confirmação delete | `AlertDialog` — título de negócio; botões Excluir / Cancelar |
 | Ícones status | `Icons.cancel` / `warning` / `check_circle` / `info` |

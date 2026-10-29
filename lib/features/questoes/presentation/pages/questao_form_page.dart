@@ -194,7 +194,7 @@ class _QuestaoFormPageState extends ConsumerState<QuestaoFormPage> {
                                   color: isCorrect
                                       ? colors.primaryContainer.withValues(alpha: 0.55)
                                       : colors.surfaceContainerHigh,
-                                  borderRadius: BorderRadius.circular(18),
+                                  borderRadius: BorderRadius.circular(12),
                                   elevation: 1,
                                   shadowColor: colors.shadow.withValues(alpha: 0.12),
                                   child: Padding(

@@ -30,13 +30,14 @@ class InfoCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(12),
         gradient: AppGradients.softCard(colors, tint),
+        border: Border.all(color: colors.outlineVariant),
         boxShadow: <BoxShadow>[
           BoxShadow(
-            color: tint.withValues(alpha: 0.14),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
+            color: colors.shadow.withValues(alpha: 0.06),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -50,8 +51,8 @@ class InfoCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(11),
                   decoration: BoxDecoration(
-                    color: tint.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(14),
+                    color: tint.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(icon, color: tint),
                 ),
@@ -127,7 +128,7 @@ class NavCard extends StatelessWidget {
                 padding: const EdgeInsets.all(11),
                 decoration: BoxDecoration(
                   color: tint.withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(icon, color: tint, size: 22),
               ),

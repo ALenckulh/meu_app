@@ -1,15 +1,42 @@
 # App de Correção Automática de Provas
 
-Protótipo Flutter (N1) — interface, navegação e fluxo completo com dados mockados.
+App Flutter (N2) para montar provas de múltipla escolha, imprimir folhas de resposta com QR Code e corrigir pela câmera. Os dados ficam no Firebase (Auth + Realtime Database).
 
 ## Executar
 
 ```bash
 flutter pub get
-flutter run
+flutter run -d chrome   # web; no celular, use o dispositivo conectado
 ```
 
-Login mock: `ana@escola.com` / `123456`
+- Crie uma conta na tela **Cadastro** e entre com ela. O login fixo da N1 (`ana@escola.com`) não existe mais.
+- No Windows, `flutter pub get` pede o **Modo de Desenvolvedor** ativado (`start ms-settings:developers`) para criar os links dos plugins.
+- Testes e análise: `flutter test` e `flutter analyze`.
+
+## Fluxo principal
+
+Turma + alunos → banco de questões → prova (questões + turma) → variações embaralhadas por aluno → imprimir PDF com QR individual → **Corrigir** (lê o QR e recebe as respostas) → **Resultados**.
+
+Regras importantes:
+
+- Cada folha (aluno + prova) tem uma única correção; corrigir de novo substitui a nota.
+- Gerar a variação de um aluno de novo, ou mudar as questões ou a turma da prova, invalida as folhas já impressas (o app pede confirmação).
+- A correção usa o gabarito atual da questão e o salva junto com a nota.
+- Questão usada em alguma prova não pode ser excluída.
+
+## Identidade visual
+
+Baseada no site da Católica de Santa Catarina ([catolicasc.org.br](https://www.catolicasc.org.br)). Os tokens ficam em [`lib/core/theme/material_theme.dart`](lib/core/theme/material_theme.dart); as telas usam só o `ColorScheme` (ver [NORMAS-UX](docs/NORMAS-UX.md)).
+
+| Papel | Cor |
+|---|---|
+| Primária (bordô) | `#9B1536` |
+| Destaque (dourado) | `#C0994F` (texto: `#8A6A2F`) |
+| Apoio (azul) | `#12588A` |
+| Texto / texto secundário | `#282828` / `#767676` |
+| Fundo / bordas | `#F6F6F6` / `#E1E1E1` |
+
+Tipografia: **Poppins** (texto) e **Montserrat** (títulos), embutidas em `assets/fonts` (licença OFL). Cantos de 10–12px e botões em pílula.
 
 ## Documentação
 

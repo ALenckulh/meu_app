@@ -76,7 +76,7 @@ class TurmaDetailPage extends ConsumerWidget {
               return Material(
                 key: Key('aluno-${aluno.id}'),
                 color: colors.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(12),
                 elevation: 1.5,
                 shadowColor: colors.shadow.withValues(alpha: 0.15),
                 child: Padding(

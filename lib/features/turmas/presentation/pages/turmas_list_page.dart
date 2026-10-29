@@ -48,12 +48,12 @@ class TurmasListPage extends ConsumerWidget {
               final Turma turma = turmas[index];
               return Material(
                 color: colors.surfaceContainerHigh,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(12),
                 elevation: 1.5,
                 shadowColor: colors.shadow.withValues(alpha: 0.15),
                 child: InkWell(
                   key: Key('turma-${turma.id}'),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(12),
                   onTap: () => context.push('/turmas/${turma.id}'),
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 4, 8),

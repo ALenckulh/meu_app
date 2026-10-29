@@ -28,9 +28,9 @@ class AppSemanticColors extends ThemeExtension<AppSemanticColors> {
     onSuccess: Color(0xffffffff),
     successContainer: Color(0xffd8f2e2),
     onSuccessContainer: Color(0xff0b3b22),
-    info: Color(0xff3f6fe5),
-    infoContainer: Color(0xffdee6ff),
-    onInfoContainer: Color(0xff0a1f52),
+    info: Color(0xff12588a),
+    infoContainer: Color(0xffd9e8f4),
+    onInfoContainer: Color(0xff0a2f4b),
   );
 
   static const AppSemanticColors dark = AppSemanticColors(

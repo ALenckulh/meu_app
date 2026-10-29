@@ -254,7 +254,7 @@ class _ResultadosPageState extends ConsumerState<ResultadosPage> {
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
                         color: colors.secondaryContainer,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
                         children: <Widget>[
@@ -427,7 +427,7 @@ class _ScoreBadge extends StatelessWidget {
     final ColorScheme colors = theme.colorScheme;
     final Color accent = nota >= 6
         ? context.semantic.success
-        : (nota >= 4 ? colors.tertiary : colors.error);
+        : (nota >= 4 ? colors.secondary : colors.error);
 
     return Container(
       width: 46,

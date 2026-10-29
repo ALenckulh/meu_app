@@ -243,7 +243,7 @@ class _InstrucoesCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: colors.secondaryContainer,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -295,11 +295,11 @@ class _LinhaPreview extends StatelessWidget {
 
     return Material(
       color: ok ? colors.surfaceContainerHigh : colors.errorContainer,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(12),
       elevation: ok ? 1.5 : 0,
       shadowColor: colors.shadow.withValues(alpha: 0.15),
       child: ListTile(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         leading: CircleAvatar(
           backgroundColor: ok
               ? colors.tertiaryContainer

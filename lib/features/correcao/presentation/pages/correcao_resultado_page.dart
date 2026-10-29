@@ -81,8 +81,8 @@ class CorrecaoResultadoPage extends ConsumerWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: AppGradients.celebration(colors),
-                  borderRadius: BorderRadius.circular(24),
+                  gradient: AppGradients.brand(colors),
+                  borderRadius: BorderRadius.circular(12),
                   boxShadow: <BoxShadow>[
                     BoxShadow(
                       color: colors.primary.withValues(alpha: 0.16),
@@ -98,9 +98,9 @@ class CorrecaoResultadoPage extends ConsumerWidget {
                         CircleAvatar(
                           radius: 20,
                           backgroundColor:
-                              colors.onPrimaryContainer.withValues(alpha: 0.15),
+                              colors.onPrimary.withValues(alpha: 0.15),
                           child: Icon(Icons.check,
-                              color: colors.onPrimaryContainer),
+                              color: colors.onPrimary),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -110,14 +110,14 @@ class CorrecaoResultadoPage extends ConsumerWidget {
                               Text(
                                 aluno?.nome ?? correcao.alunoId,
                                 style: theme.textTheme.titleMedium?.copyWith(
-                                  color: colors.onPrimaryContainer,
+                                  color: colors.onPrimary,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
                               Text(
                                 prova?.titulo ?? 'Prova removida',
                                 style: theme.textTheme.bodySmall?.copyWith(
-                                  color: colors.onPrimaryContainer
+                                  color: colors.onPrimary
                                       .withValues(alpha: 0.8),
                                 ),
                               ),
@@ -130,7 +130,7 @@ class CorrecaoResultadoPage extends ConsumerWidget {
                     Text(
                       correcao.nota.toStringAsFixed(1),
                       style: theme.textTheme.displaySmall?.copyWith(
-                        color: colors.onPrimaryContainer,
+                        color: colors.onPrimary,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -138,7 +138,7 @@ class CorrecaoResultadoPage extends ConsumerWidget {
                       'nota final · $pct% de acerto',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color:
-                            colors.onPrimaryContainer.withValues(alpha: 0.85),
+                            colors.onPrimary.withValues(alpha: 0.85),
                       ),
                     ),
                   ],

@@ -583,7 +583,7 @@ class _AreaCamera extends StatelessWidget {
                 : 'Câmera indisponível nesta plataforma. Use "Digitar código".');
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         width: double.infinity,
         color: Colors.black,
@@ -602,7 +602,7 @@ class _AreaCamera extends StatelessWidget {
                 width: 220,
                 height: 220,
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: erro != null ? colors.error : colors.primary,
                     width: 3,
@@ -624,7 +624,7 @@ class _AreaCamera extends StatelessWidget {
                   color: erro != null
                       ? colors.errorContainer
                       : Colors.black.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   mensagem,

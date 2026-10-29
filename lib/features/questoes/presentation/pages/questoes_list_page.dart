@@ -46,7 +46,7 @@ class QuestoesListPage extends ConsumerWidget {
                 filled: true,
                 fillColor: Theme.of(context).colorScheme.surfaceContainerHigh,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide.none,
                 ),
               ),
@@ -72,12 +72,12 @@ class QuestoesListPage extends ConsumerWidget {
                     final Questao q = questoes[index];
                     return Material(
                       color: colors.surfaceContainerHigh,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(12),
                       elevation: 1.5,
                       shadowColor: colors.shadow.withValues(alpha: 0.15),
                       child: InkWell(
                         key: Key('questao-${q.id}'),
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(12),
                         onTap: () => context.push('/questoes/${q.id}/editar'),
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(16, 12, 4, 12),

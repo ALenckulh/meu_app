@@ -2,6 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meu_app/core/di/providers.dart';
+import 'package:meu_app/core/widgets/brand_header.dart';
+import 'package:meu_app/core/widgets/section_header.dart';
+
+/// Totais do professor logado, para o resumo do início.
+typedef _Resumo = ({int turmas, int questoes, int provas, int correcoes});
+
+final _resumoProvider = FutureProvider.autoDispose<_Resumo>((Ref ref) async {
+  ref.watch(listVersionProvider);
+  final String? professorId = ref.watch(authSessionProvider)?.id;
+  if (professorId == null) {
+    return (turmas: 0, questoes: 0, provas: 0, correcoes: 0);
+  }
+  final List<int> totais = await Future.wait(<Future<int>>[
+    ref
+        .read(turmaRepositoryProvider)
+        .listByProfessor(professorId)
+        .then((List<dynamic> l) => l.length),
+    ref.read(questaoRepositoryProvider).listAll().then((l) => l.length),
+    ref.read(provaRepositoryProvider).listAll().then((l) => l.length),
+    ref.read(correcaoRepositoryProvider).listAll().then((l) => l.length),
+  ]);
+  return (
+    turmas: totais[0],
+    questoes: totais[1],
+    provas: totais[2],
+    correcoes: totais[3],
+  );
+});
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -9,7 +37,7 @@ class DashboardPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final String nome = ref.watch(authSessionProvider)?.nome ?? 'Professor';
-    final ColorScheme colors = Theme.of(context).colorScheme;
+    final AsyncValue<_Resumo> resumo = ref.watch(_resumoProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -31,107 +59,108 @@ class DashboardPage extends ConsumerWidget {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: <Widget>[
-          Text(
-            'Olá, $nome',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+          BrandHeader(
+            icon: Icons.waving_hand_outlined,
+            titulo: 'Olá, $nome',
+            subtitulo: 'Turmas → questões → prova → imprimir → corrigir.',
+            child: resumo.when(
+              data: (_Resumo r) => Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: <Widget>[
+                  _Numero(valor: r.turmas, rotulo: 'turmas'),
+                  _Numero(valor: r.questoes, rotulo: 'questões'),
+                  _Numero(valor: r.provas, rotulo: 'provas'),
+                  _Numero(valor: r.correcoes, rotulo: 'correções'),
+                ],
+              ),
+              loading: () => const SizedBox(height: 44),
+              error: (_, _) => const SizedBox.shrink(),
+            ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            'Fluxo N1: turmas → questões → provas → correção → resultados',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: colors.onSurfaceVariant,
-                ),
-          ),
-          const SizedBox(height: 24),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
+          const SectionHeader('Acesso rápido'),
+          GridView.extent(
+            maxCrossAxisExtent: 180,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 1.25,
             children: <Widget>[
               _ShortcutCard(
                 keyName: 'card-turmas',
-                icon: Icons.groups,
+                icon: Icons.groups_outlined,
                 label: 'Turmas',
                 onTap: () => context.go('/turmas'),
               ),
               _ShortcutCard(
                 keyName: 'card-questoes',
-                icon: Icons.quiz,
+                icon: Icons.quiz_outlined,
                 label: 'Questões',
                 onTap: () => context.go('/questoes'),
               ),
               _ShortcutCard(
                 keyName: 'card-provas',
-                icon: Icons.assignment,
+                icon: Icons.assignment_outlined,
                 label: 'Provas',
                 onTap: () => context.go('/provas'),
               ),
               _ShortcutCard(
                 keyName: 'card-correcao',
-                icon: Icons.camera_alt,
+                icon: Icons.camera_alt_outlined,
                 label: 'Corrigir',
                 onTap: () => context.go('/mais/correcao'),
               ),
               _ShortcutCard(
                 keyName: 'card-resultados',
-                icon: Icons.bar_chart,
+                icon: Icons.bar_chart_outlined,
                 label: 'Resultados',
-                onTap: () => context.go('/mais/resultados'),
+                onTap: () => context.push('/mais/resultados'),
               ),
             ],
           ),
-          const SizedBox(height: 28),
-          Text(
-            'Resumo',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-          ),
-          const SizedBox(height: 10),
-          Material(
-            color: colors.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(20),
-            elevation: 1.5,
-            shadowColor: colors.shadow.withValues(alpha: 0.15),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: Row(
-                children: <Widget>[
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: colors.secondaryContainer,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(Icons.info_outline, color: colors.onSecondaryContainer),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: <Widget>[
-                        const Text(
-                          '2 turmas · 8 questões · 1 prova',
-                          style: TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'Dados em memória — sem banco real (N1).',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: colors.onSurfaceVariant,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+        ],
+      ),
+    );
+  }
+}
+
+class _Numero extends StatelessWidget {
+  const _Numero({required this.valor, required this.rotulo});
+
+  final int valor;
+  final String rotulo;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: colors.onPrimary.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text.rich(
+        TextSpan(
+          children: <InlineSpan>[
+            TextSpan(
+              text: '$valor ',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: colors.onPrimary,
+                fontWeight: FontWeight.w700,
               ),
             ),
-          ),
-        ],
+            TextSpan(
+              text: rotulo,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colors.onPrimary.withValues(alpha: 0.9),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -152,37 +181,35 @@ class _ShortcutCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colors = Theme.of(context).colorScheme;
-    return SizedBox(
-      width: 150,
-      child: Material(
-        color: colors.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(20),
-        elevation: 1.5,
-        shadowColor: colors.shadow.withValues(alpha: 0.15),
-        child: InkWell(
-          key: Key(keyName),
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 12),
-            child: Column(
-              children: <Widget>[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: colors.primaryContainer,
-                    shape: BoxShape.circle,
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    return Card(
+      child: InkWell(
+        key: Key(keyName),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: <Widget>[
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: colors.primaryContainer,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: colors.primary, size: 24),
+              ),
+              Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Text(label, style: theme.textTheme.titleSmall),
                   ),
-                  child: Icon(icon, color: colors.onPrimaryContainer, size: 26),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  label,
-                  style: const TextStyle(fontWeight: FontWeight.w500),
-                ),
-              ],
-            ),
+                  Icon(Icons.arrow_forward, size: 18, color: colors.primary),
+                ],
+              ),
+            ],
           ),
         ),
       ),
