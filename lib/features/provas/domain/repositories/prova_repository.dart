@@ -8,6 +8,7 @@ abstract class ProvaRepository {
   Future<Prova> update(Prova prova);
   Future<void> delete(String id);
   Future<List<VariacaoDeProva>> listVariacoes(String provaId);
+  Future<VariacaoDeProva?> getVariacaoById(String id);
   Future<VariacaoDeProva> gerarVariacao({
     required String provaId,
     required String alunoId,

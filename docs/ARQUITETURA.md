@@ -7,20 +7,19 @@ Feature-first + camadas (adaptação do guia Systextil para Flutter).
 ```text
 presentation (pages/widgets/providers)
     → domain (entities/repository interfaces)
-    → data (mock repositories/datasources)
+    → data (RTDB repositories)
 ```
 
 - Domain não importa Flutter UI.
-- UI não acessa `AppMockStore` diretamente (exceto telas de leitura que já usam store via providers/repositórios).
-- // N2: trocar `*MockRepository` por Firestore sem reescrever páginas.
+- UI acessa dados só via providers → repository interfaces.
 
 ## Pastas
 
 ```text
 lib/
-  core/          # theme, router, widgets, di, mock store
+  core/          # theme, router, widgets, di, rtdb_paths
   features/      # auth, home, turmas, alunos, questoes, provas, geracao, correcao, resultados
-  shared/models/ # entidades compartilhadas
+  shared/models/ # entidades + fromMap/toMap
   l10n/          # ARB pt
 ```
 
@@ -31,4 +30,9 @@ lib/
 
 ## Dependências
 
-pages → providers → repository interface → mock repository → AppMockStore
+```text
+pages → providers → repository interface → *RtdbRepository → Firebase Realtime Database
+auth → Firebase Auth + node professores/{uid}
+```
+
+Gerar variação e simular correção rodam no client (sem Cloud Functions).

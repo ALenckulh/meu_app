@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:meu_app/core/data/app_mock_store.dart';
 import 'package:meu_app/core/di/providers.dart';
 import 'package:meu_app/core/theme/app_semantic_colors.dart';
 import 'package:meu_app/shared/models/questao.dart';
@@ -18,111 +17,134 @@ class VariacaoPreviewPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AppMockStore store = ref.watch(appMockStoreProvider);
-    VariacaoDeProva? variacao;
-    try {
-      variacao =
-          store.variacoes.firstWhere((VariacaoDeProva v) => v.id == variacaoId);
-    } catch (_) {
-      variacao = null;
-    }
+    return FutureBuilder<VariacaoDeProva?>(
+      future:
+          ref.read(provaRepositoryProvider).getVariacaoById(variacaoId),
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<VariacaoDeProva?> snapshot,
+      ) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final VariacaoDeProva? variacao = snapshot.data;
+        if (variacao == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Variação')),
+            body: const Center(child: Text('Variação não encontrada.')),
+          );
+        }
 
-    if (variacao == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Variação')),
-        body: const Center(child: Text('Variação não encontrada.')),
-      );
-    }
+        final ThemeData theme = Theme.of(context);
+        final ColorScheme colors = theme.colorScheme;
+        const List<String> labels = <String>['A', 'B', 'C', 'D'];
 
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colors = theme.colorScheme;
-    const List<String> labels = <String>['A', 'B', 'C', 'D'];
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Prévia da variação')),
-      body: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-        itemCount: variacao.ordemQuestoes.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
-        itemBuilder: (BuildContext context, int index) {
-          final String qId = variacao!.ordemQuestoes[index];
-          final Questao questao =
-              store.questoes.firstWhere((Questao q) => q.id == qId);
-          final List<int> perm =
-              variacao.ordemAlternativas[qId] ?? <int>[0, 1, 2, 3];
-          final int gabarito = variacao.gabaritoRemapeado[qId] ?? 0;
-
-          return Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      CircleAvatar(
-                        radius: 14,
-                        backgroundColor: colors.primaryContainer,
-                        child: Text(
-                          '${index + 1}',
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            color: colors.onPrimaryContainer,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          questao.enunciado,
-                          style: theme.textTheme.titleMedium,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  ...List<Widget>.generate(4, (int i) {
-                    final String texto = questao.alternativas[perm[i]];
-                    final bool correta = i == gabarito;
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 6),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: correta
-                            ? context.semantic.successContainer
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          _Bubble(label: labels[i], filled: correta),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              texto,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: correta
-                                    ? FontWeight.w600
-                                    : FontWeight.normal,
-                              ),
-                            ),
-                          ),
-                          if (correta)
-                            Icon(Icons.check_circle,
-                                size: 18, color: context.semantic.success),
-                        ],
+        return Scaffold(
+          appBar: AppBar(title: const Text('Prévia da variação')),
+          body: ListView.separated(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+            itemCount: variacao.ordemQuestoes.length,
+            separatorBuilder: (_, _) => const SizedBox(height: 12),
+            itemBuilder: (BuildContext context, int index) {
+              final String qId = variacao.ordemQuestoes[index];
+              return FutureBuilder<Questao?>(
+                future: ref.read(questaoRepositoryProvider).getById(qId),
+                builder: (
+                  BuildContext context,
+                  AsyncSnapshot<Questao?> qSnap,
+                ) {
+                  final Questao? questao = qSnap.data;
+                  if (questao == null) {
+                    return const Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Text('Questão não encontrada'),
                       ),
                     );
-                  }),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
+                  }
+                  final List<int> perm =
+                      variacao.ordemAlternativas[qId] ?? <int>[0, 1, 2, 3];
+                  final int gabarito = variacao.gabaritoRemapeado[qId] ?? 0;
+
+                  return Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: <Widget>[
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              CircleAvatar(
+                                radius: 14,
+                                backgroundColor: colors.primaryContainer,
+                                child: Text(
+                                  '${index + 1}',
+                                  style: theme.textTheme.labelLarge?.copyWith(
+                                    color: colors.onPrimaryContainer,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  questao.enunciado,
+                                  style: theme.textTheme.titleMedium,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          ...List<Widget>.generate(4, (int i) {
+                            final String texto = questao.alternativas[perm[i]];
+                            final bool correta = i == gabarito;
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: correta
+                                    ? context.semantic.successContainer
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: <Widget>[
+                                  _Bubble(label: labels[i], filled: correta),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      texto,
+                                      style:
+                                          theme.textTheme.bodyMedium?.copyWith(
+                                        fontWeight: correta
+                                            ? FontWeight.w600
+                                            : FontWeight.normal,
+                                      ),
+                                    ),
+                                  ),
+                                  if (correta)
+                                    Icon(Icons.check_circle,
+                                        size: 18,
+                                        color: context.semantic.success),
+                                ],
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
@@ -149,7 +171,8 @@ class _Bubble extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: filled ? context.semantic.onSuccess : colors.onSurfaceVariant,
+              color:
+                  filled ? context.semantic.onSuccess : colors.onSurfaceVariant,
               fontWeight: FontWeight.w700,
             ),
       ),

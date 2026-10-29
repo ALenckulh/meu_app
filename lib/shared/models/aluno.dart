@@ -11,6 +11,23 @@ class Aluno {
   final String nome;
   final String matricula;
 
+  factory Aluno.fromMap(String id, Map<dynamic, dynamic> map) {
+    return Aluno(
+      id: id,
+      turmaId: map['turmaId'] as String? ?? '',
+      nome: map['nome'] as String? ?? '',
+      matricula: map['matricula'] as String? ?? '',
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'turmaId': turmaId,
+      'nome': nome,
+      'matricula': matricula,
+    };
+  }
+
   Aluno copyWith({
     String? id,
     String? turmaId,

@@ -1,135 +1,388 @@
+import 'dart:math';
+
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:meu_app/core/data/app_mock_store.dart';
 import 'package:meu_app/core/di/providers.dart';
 import 'package:meu_app/core/theme/app_semantic_colors.dart';
 import 'package:meu_app/core/widgets/empty_state.dart';
+import 'package:meu_app/core/widgets/feedback.dart';
+import 'package:meu_app/core/widgets/section_header.dart';
 import 'package:meu_app/shared/models/aluno.dart';
 import 'package:meu_app/shared/models/correcao.dart';
+import 'package:meu_app/shared/models/prova.dart';
+import 'package:meu_app/shared/models/turma.dart';
+import 'package:meu_app/shared/models/variacao_de_prova.dart';
 
-class ResultadosPage extends ConsumerWidget {
+class ResultadosPage extends ConsumerStatefulWidget {
   const ResultadosPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ResultadosPage> createState() => _ResultadosPageState();
+}
+
+class _ResultadoRow {
+  const _ResultadoRow({required this.correcao, required this.aluno});
+
+  final Correcao correcao;
+  final Aluno aluno;
+}
+
+class _ResultadosPageState extends ConsumerState<ResultadosPage> {
+  final Random _random = Random();
+  bool _simulando = false;
+
+  Future<List<_ResultadoRow>> _loadRows() async {
+    final List<Correcao> correcoes =
+        await ref.read(correcaoRepositoryProvider).listAll();
+    final List<_ResultadoRow> rows = <_ResultadoRow>[];
+    for (final Correcao c in correcoes) {
+      final Aluno? aluno =
+          await ref.read(alunoRepositoryProvider).getById(c.alunoId);
+      if (aluno != null) {
+        rows.add(_ResultadoRow(correcao: c, aluno: aluno));
+      }
+    }
+    return rows;
+  }
+
+  Future<void> _simularResultado() async {
+    final String? professorId = ref.read(authSessionProvider)?.id;
+    if (professorId == null) {
+      showSuccessSnackBar(context, 'Sessão inválida. Faça login novamente.');
+      return;
+    }
+    setState(() => _simulando = true);
+    try {
+      final List<Turma> turmas = await ref
+          .read(turmaRepositoryProvider)
+          .listByProfessor(professorId);
+      final List<Aluno> todos = <Aluno>[];
+      for (final Turma t in turmas) {
+        todos.addAll(
+          await ref.read(alunoRepositoryProvider).listByTurma(t.id),
+        );
+      }
+
+      final List<Correcao> existentes =
+          await ref.read(correcaoRepositoryProvider).listAll();
+      final Set<String> jaCorrigidos =
+          existentes.map((Correcao c) => c.alunoId).toSet();
+
+      final List<Aluno> candidatos = todos
+          .where((Aluno a) => !jaCorrigidos.contains(a.id))
+          .toList();
+      if (candidatos.isEmpty) {
+        if (mounted) {
+          showSuccessSnackBar(context, 'Nenhum aluno sem correção.');
+        }
+        return;
+      }
+
+      final Aluno aluno = candidatos[_random.nextInt(candidatos.length)];
+
+      final List<Prova> provas =
+          await ref.read(provaRepositoryProvider).listAll();
+      final List<Prova> provasTurma = provas
+          .where(
+            (Prova p) =>
+                p.turmaId == aluno.turmaId && p.questaoIds.isNotEmpty,
+          )
+          .toList();
+      if (provasTurma.isEmpty) {
+        if (mounted) {
+          showSuccessSnackBar(
+            context,
+            'Nenhuma prova com questões para a turma deste aluno.',
+          );
+        }
+        return;
+      }
+
+      final Prova prova = provasTurma[_random.nextInt(provasTurma.length)];
+      final List<VariacaoDeProva> variacoes =
+          await ref.read(provaRepositoryProvider).listVariacoes(prova.id);
+      VariacaoDeProva? variacao;
+      for (final VariacaoDeProva v in variacoes) {
+        if (v.alunoId == aluno.id) {
+          variacao = v;
+          break;
+        }
+      }
+      variacao ??= await ref.read(provaRepositoryProvider).gerarVariacao(
+            provaId: prova.id,
+            alunoId: aluno.id,
+            embaralharQuestoes: true,
+            embaralharAlternativas: true,
+          );
+
+      final List<int> respostas = List<int>.generate(
+        variacao.ordemQuestoes.length,
+        (_) => _random.nextInt(4),
+      );
+
+      final Correcao correcao =
+          await ref.read(correcaoRepositoryProvider).corrigir(
+                variacaoId: variacao.id,
+                alunoId: aluno.id,
+                professorId: professorId,
+                respostas: respostas,
+              );
+
+      ref.read(listVersionProvider.notifier).bump();
+      if (!mounted) {
+        return;
+      }
+      showSuccessSnackBar(
+        context,
+        'Resultado simulado para ${aluno.nome}.',
+      );
+      await context.push('/mais/correcao/resultado/${correcao.id}');
+    } catch (e) {
+      if (mounted) {
+        showSuccessSnackBar(context, 'Erro ao simular: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _simulando = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.watch(listVersionProvider);
-    final AppMockStore store = ref.watch(appMockStoreProvider);
-    final List<Correcao> correcoes = store.correcoes;
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colors = theme.colorScheme;
+    return FutureBuilder<List<_ResultadoRow>>(
+      future: _loadRows(),
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<List<_ResultadoRow>> snapshot,
+      ) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final List<_ResultadoRow> rows = snapshot.data ?? <_ResultadoRow>[];
+        final ThemeData theme = Theme.of(context);
+        final ColorScheme colors = theme.colorScheme;
 
-    final double media = correcoes.isEmpty
-        ? 0
-        : correcoes.map((Correcao c) => c.nota).reduce((double a, double b) => a + b) /
-            correcoes.length;
+        final double media = rows.isEmpty
+            ? 0
+            : rows
+                    .map((_ResultadoRow r) => r.correcao.nota)
+                    .reduce((double a, double b) => a + b) /
+                rows.length;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Resultados'),
-        actions: <Widget>[
-          Tooltip(
-            message: 'Estatísticas',
-            child: IconButton(
-              key: const Key('btn-ir-estatisticas'),
-              icon: const Icon(Icons.insights_outlined),
-              onPressed: () => context.push('/mais/estatisticas'),
-            ),
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Resultados'),
+            actions: <Widget>[
+              Tooltip(
+                message: 'Simular resultado',
+                child: IconButton(
+                  key: const Key('btn-simular-resultado'),
+                  icon: _simulando
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.casino_outlined),
+                  onPressed: _simulando ? null : _simularResultado,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-      body: correcoes.isEmpty
-          ? const EmptyState(
-              icon: Icons.fact_check_outlined,
-              message: 'Nenhuma correção disponível.',
-            )
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-              children: <Widget>[
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: colors.secondaryContainer,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    children: <Widget>[
-                      Icon(Icons.groups_outlined,
-                          color: colors.onSecondaryContainer),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          '${correcoes.length} prova(s) corrigida(s)',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colors.onSecondaryContainer,
+          body: rows.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        const EmptyState(
+                          icon: Icons.fact_check_outlined,
+                          message: 'Nenhuma correção disponível.',
+                        ),
+                        const SizedBox(height: 8),
+                        FilledButton.icon(
+                          key: const Key('btn-simular-resultado-empty'),
+                          onPressed: _simulando ? null : _simularResultado,
+                          icon: const Icon(Icons.casino_outlined),
+                          label: Text(
+                            _simulando
+                                ? 'Simulando...'
+                                : 'Simular resultado',
                           ),
                         ),
-                      ),
-                      Text(
-                        'média ${media.toStringAsFixed(1)}',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: colors.onSecondaryContainer,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                ...correcoes.map((Correcao c) {
-                  Aluno? aluno;
-                  try {
-                    aluno =
-                        store.alunos.firstWhere((Aluno a) => a.id == c.alunoId);
-                  } catch (_) {
-                    aluno = null;
-                  }
-                  return Padding(
-                    key: Key('resultado-${c.id}'),
-                    padding: const EdgeInsets.only(bottom: 10),
-                    child: Card(
-                      child: InkWell(
-                        onTap: () =>
-                            context.push('/mais/resultados/${c.alunoId}'),
-                        child: Padding(
-                          padding: const EdgeInsets.all(14),
-                          child: Row(
-                            children: <Widget>[
-                              _ScoreBadge(nota: c.nota),
-                              const SizedBox(width: 14),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                  children: <Widget>[
-                                    Text(
-                                      aluno?.nome ?? c.alunoId,
-                                      style: theme.textTheme.titleMedium
-                                          ?.copyWith(
-                                              fontWeight: FontWeight.w600),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '${c.acertos}/${c.totalQuestoes} acertos',
-                                      style: theme.textTheme.bodySmall
-                                          ?.copyWith(
-                                        color: colors.onSurfaceVariant,
+                )
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                  children: <Widget>[
+                    Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        color: colors.secondaryContainer,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        children: <Widget>[
+                          Icon(Icons.groups_outlined,
+                              color: colors.onSecondaryContainer),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              '${rows.length} prova(s) corrigida(s)',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colors.onSecondaryContainer,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            'média ${media.toStringAsFixed(1)}',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: colors.onSecondaryContainer,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SectionHeader('Desempenho'),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(12, 20, 16, 12),
+                        child: SizedBox(
+                          height: 180,
+                          child: BarChart(
+                            BarChartData(
+                              alignment: BarChartAlignment.spaceAround,
+                              maxY: 10,
+                              gridData: FlGridData(
+                                drawVerticalLine: false,
+                                horizontalInterval: 2,
+                                getDrawingHorizontalLine: (double v) => FlLine(
+                                  color: colors.outlineVariant,
+                                  strokeWidth: 1,
+                                ),
+                              ),
+                              borderData: FlBorderData(show: false),
+                              titlesData: FlTitlesData(
+                                leftTitles: const AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    reservedSize: 28,
+                                    interval: 2,
+                                  ),
+                                ),
+                                rightTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                topTitles: const AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(
+                                    showTitles: true,
+                                    getTitlesWidget:
+                                        (double value, TitleMeta meta) {
+                                      final int i = value.toInt();
+                                      if (i < 0 || i >= rows.length) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      final String nome = rows[i].aluno.nome;
+                                      return Padding(
+                                        padding: const EdgeInsets.only(top: 6),
+                                        child: Text(
+                                          nome.length > 6
+                                              ? '${nome.substring(0, 6)}…'
+                                              : nome,
+                                          style: theme.textTheme.labelSmall,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                              barGroups: List<BarChartGroupData>.generate(
+                                rows.length,
+                                (int i) => BarChartGroupData(
+                                  x: i,
+                                  barRods: <BarChartRodData>[
+                                    BarChartRodData(
+                                      toY: rows[i].correcao.nota,
+                                      color: colors.primary,
+                                      width: 16,
+                                      borderRadius:
+                                          const BorderRadius.vertical(
+                                        top: Radius.circular(6),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              Icon(Icons.chevron_right,
-                                  color: colors.onSurfaceVariant),
-                            ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  );
-                }),
-              ],
-            ),
+                    const SectionHeader('Por aluno'),
+                    ...rows.map((_ResultadoRow row) {
+                      final Correcao c = row.correcao;
+                      final Aluno aluno = row.aluno;
+                      return Padding(
+                        key: Key('resultado-${c.id}'),
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Card(
+                          child: InkWell(
+                            onTap: () =>
+                                context.push('/mais/resultados/${c.alunoId}'),
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Row(
+                                children: <Widget>[
+                                  _ScoreBadge(nota: c.nota),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: <Widget>[
+                                        Text(
+                                          aluno.nome,
+                                          style: theme.textTheme.titleMedium
+                                              ?.copyWith(
+                                                  fontWeight: FontWeight.w600),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          '${c.acertos}/${c.totalQuestoes} acertos',
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                            color: colors.onSurfaceVariant,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Icon(Icons.chevron_right,
+                                      color: colors.onSurfaceVariant),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+        );
+      },
     );
   }
 }

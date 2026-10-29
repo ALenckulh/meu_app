@@ -8,14 +8,12 @@ import 'package:meu_app/features/geracao/domain/qr_payload.dart';
 import 'package:meu_app/shared/models/aluno.dart';
 import 'package:meu_app/shared/models/correcao.dart';
 import 'package:meu_app/shared/models/prova.dart';
+import 'package:meu_app/shared/models/questao.dart';
 import 'package:meu_app/shared/models/variacao_de_prova.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
-/// Correção via câmera (RF06 — parte 1).
-///
-/// 1. A câmera lê o QR Code da folha de respostas individual.
-/// 2. O app identifica a prova, a variação e o aluno pelo QR.
-/// 3. A leitura das marcações ainda é simulada (próxima etapa: OMR).
+/// Correção via QR + entrada manual das respostas (N2).
+/// OCR das marcações fica para N3.
 class CorrigirProvaPage extends ConsumerStatefulWidget {
   const CorrigirProvaPage({super.key});
 
@@ -23,7 +21,6 @@ class CorrigirProvaPage extends ConsumerStatefulWidget {
   ConsumerState<CorrigirProvaPage> createState() => _CorrigirProvaPageState();
 }
 
-/// Folha reconhecida a partir do QR.
 class _FolhaIdentificada {
   const _FolhaIdentificada({
     required this.prova,
@@ -37,12 +34,13 @@ class _FolhaIdentificada {
 }
 
 class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
-  /// Plataformas em que o mobile_scanner tem câmera disponível.
   static bool get _cameraSuportada =>
       kIsWeb ||
       defaultTargetPlatform == TargetPlatform.android ||
       defaultTargetPlatform == TargetPlatform.iOS ||
       defaultTargetPlatform == TargetPlatform.macOS;
+
+  static const List<String> _letras = <String>['A', 'B', 'C', 'D'];
 
   final MobileScannerController _controller = MobileScannerController(
     detectionSpeed: DetectionSpeed.noDuplicates,
@@ -53,6 +51,10 @@ class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
   bool _corrigindo = false;
   String? _erro;
   _FolhaIdentificada? _folha;
+  Map<String, Questao> _questoes = <String, Questao>{};
+
+  /// Índice da alternativa (0–3) por posição na variação; null = sem resposta.
+  List<int?> _respostas = <int?>[];
 
   @override
   void dispose() {
@@ -83,7 +85,8 @@ class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
     try {
       final QrPayload? qr = QrPayload.decode(raw);
       if (qr == null) {
-        _falhar('QR Code não reconhecido. Use uma folha de respostas gerada pelo app.');
+        _falhar(
+            'QR Code não reconhecido. Use uma folha de respostas gerada pelo app.');
         return;
       }
 
@@ -97,7 +100,7 @@ class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
       if (!qr.individual) {
         _falhar(
           'Folha geral da prova "${prova.titulo}". Ela não identifica o '
-          'aluno — para a correção automática, imprima as folhas individuais '
+          'aluno — para a correção, imprima as folhas individuais '
           'em Provas → Gerar → Individualização.',
         );
         return;
@@ -121,6 +124,15 @@ class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
       final Aluno? aluno =
           await ref.read(alunoRepositoryProvider).getById(qr.alunoId!);
 
+      final Map<String, Questao> questoes = <String, Questao>{};
+      for (final String qid in encontrada.ordemQuestoes) {
+        final Questao? q =
+            await ref.read(questaoRepositoryProvider).getById(qid);
+        if (q != null) {
+          questoes[qid] = q;
+        }
+      }
+
       if (!mounted) {
         return;
       }
@@ -130,6 +142,8 @@ class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
           variacao: encontrada,
           aluno: aluno,
         );
+        _questoes = questoes;
+        _respostas = List<int?>.filled(encontrada.ordemQuestoes.length, null);
         _processando = false;
       });
     } catch (e) {
@@ -152,6 +166,8 @@ class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
       _folha = null;
       _erro = null;
       _processando = false;
+      _questoes = <String, Questao>{};
+      _respostas = <int?>[];
     });
     await _iniciarCamera();
   }
@@ -162,9 +178,7 @@ class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
     }
     try {
       await _controller.stop();
-    } catch (_) {
-      // Câmera já parada ou sem permissão: nada a fazer.
-    }
+    } catch (_) {}
   }
 
   Future<void> _iniciarCamera() async {
@@ -173,23 +187,30 @@ class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
     }
     try {
       await _controller.start();
-    } catch (_) {
-      // Já iniciada ou sem permissão: o widget mostra o erro.
-    }
+    } catch (_) {}
   }
+
+  bool get _todasRespondidas =>
+      _respostas.isNotEmpty && _respostas.every((int? r) => r != null);
 
   Future<void> _corrigir() async {
     final _FolhaIdentificada? folha = _folha;
-    if (folha == null) {
+    if (folha == null || !_todasRespondidas) {
+      return;
+    }
+    final String? professorId = ref.read(authSessionProvider)?.id;
+    if (professorId == null) {
+      showSuccessSnackBar(context, 'Sessão inválida. Faça login novamente.');
       return;
     }
     setState(() => _corrigindo = true);
     try {
-      // Leitura das marcações ainda simulada — o QR já é real.
       final Correcao correcao =
-          await ref.read(correcaoRepositoryProvider).simularLeitura(
+          await ref.read(correcaoRepositoryProvider).corrigir(
                 variacaoId: folha.variacao.id,
                 alunoId: folha.variacao.alunoId,
+                professorId: professorId,
+                respostas: _respostas.cast<int>(),
               );
       ref.read(listVersionProvider.notifier).bump();
       if (!mounted) {
@@ -247,6 +268,12 @@ class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
       appBar: AppBar(
         title: const Text('Corrigir prova'),
         actions: <Widget>[
+          IconButton(
+            key: const Key('btn-ir-resultados'),
+            tooltip: 'Resultados',
+            onPressed: () => context.push('/mais/resultados'),
+            icon: const Icon(Icons.bar_chart_outlined),
+          ),
           if (_cameraSuportada && folha == null)
             IconButton(
               tooltip: 'Lanterna',
@@ -255,81 +282,242 @@ class _CorrigirProvaPageState extends ConsumerState<CorrigirProvaPage> {
             ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: <Widget>[
-            Expanded(
-              // A câmera fica sempre na árvore (só é pausada) para não
-              // reinicializar o scanner a cada leitura.
-              child: Stack(
-                fit: StackFit.expand,
-                children: <Widget>[
-                  _AreaCamera(
-                    controller: _controller,
-                    cameraSuportada: _cameraSuportada,
-                    processando: _processando,
-                    erro: _erro,
-                    onDetect: _onDetect,
-                  ),
-                  if (folha != null)
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: _FolhaCard(folha: folha),
-                    ),
-                ],
+      body: folha == null
+          ? _buildScanner()
+          : _buildEntradaRespostas(folha),
+    );
+  }
+
+  Widget _buildScanner() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: <Widget>[
+          Expanded(
+            child: _AreaCamera(
+              controller: _controller,
+              cameraSuportada: _cameraSuportada,
+              processando: _processando,
+              erro: _erro,
+              onDetect: _onDetect,
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (_erro != null)
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                key: const Key('btn-tentar-novamente'),
+                onPressed: _lerOutra,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Tentar novamente'),
               ),
             ),
-            const SizedBox(height: 16),
-            if (folha != null) ...<Widget>[
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
+          TextButton.icon(
+            key: const Key('btn-digitar-codigo'),
+            onPressed: _processando ? null : _digitarCodigo,
+            icon: const Icon(Icons.keyboard_outlined),
+            label: const Text('Digitar código'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEntradaRespostas(_FolhaIdentificada folha) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    final Aluno? aluno = folha.aluno;
+    final List<String> ordem = folha.variacao.ordemQuestoes;
+
+    return Column(
+      children: <Widget>[
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+            children: <Widget>[
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Row(
+                        children: <Widget>[
+                          Icon(Icons.check_circle, color: colors.primary),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Folha identificada',
+                            style: theme.textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(folha.prova.titulo,
+                          style: theme.textTheme.titleSmall),
+                      Text(
+                        aluno == null
+                            ? 'Aluno id ${folha.variacao.alunoId}'
+                            : '${aluno.nome} · matrícula ${aluno.matricula}',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Informe a alternativa marcada em cada questão '
+                        '(ordem desta variação).',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              for (int i = 0; i < ordem.length; i++) ...<Widget>[
+                _QuestaoRespostaCard(
+                  indice: i,
+                  questao: _questoes[ordem[i]],
+                  questaoId: ordem[i],
+                  ordemAlternativas:
+                      folha.variacao.ordemAlternativas[ordem[i]] ??
+                          const <int>[0, 1, 2, 3],
+                  selecionada: _respostas[i],
+                  letras: _letras,
+                  onSelect: (int alt) {
+                    setState(() => _respostas[i] = alt);
+                  },
+                ),
+                const SizedBox(height: 10),
+              ],
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            border: Border(top: BorderSide(color: colors.outlineVariant)),
+          ),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                FilledButton.icon(
                   key: const Key('btn-corrigir-folha'),
-                  onPressed: _corrigindo ? null : _corrigir,
+                  onPressed:
+                      _corrigindo || !_todasRespondidas ? null : _corrigir,
                   icon: Icon(_corrigindo
                       ? Icons.hourglass_bottom
                       : Icons.fact_check_outlined),
                   label: Text(_corrigindo
                       ? 'Corrigindo...'
-                      : 'Ler marcações e corrigir (simulado)'),
+                      : 'Corrigir com respostas informadas'),
                 ),
-              ),
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
+                if (!_todasRespondidas)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      'Selecione A–D em todas as questões.',
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: colors.error),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
                   key: const Key('btn-ler-outra'),
                   onPressed: _corrigindo ? null : _lerOutra,
                   icon: const Icon(Icons.qr_code_scanner),
                   label: const Text('Ler outra folha'),
                 ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _QuestaoRespostaCard extends StatelessWidget {
+  const _QuestaoRespostaCard({
+    required this.indice,
+    required this.questao,
+    required this.questaoId,
+    required this.ordemAlternativas,
+    required this.selecionada,
+    required this.letras,
+    required this.onSelect,
+  });
+
+  final int indice;
+  final Questao? questao;
+  final String questaoId;
+  final List<int> ordemAlternativas;
+  final int? selecionada;
+  final List<String> letras;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme colors = theme.colorScheme;
+    final List<String> alts = questao?.alternativas ?? <String>[];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              'Questão ${indice + 1}',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: colors.primary,
+                fontWeight: FontWeight.w700,
               ),
-            ] else ...<Widget>[
-              if (_erro != null)
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton.icon(
-                    key: const Key('btn-tentar-novamente'),
-                    onPressed: _lerOutra,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Tentar novamente'),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              questao?.enunciado ?? questaoId,
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: <Widget>[
+                for (int slot = 0; slot < 4; slot++)
+                  ChoiceChip(
+                    key: Key('chip-q$indice-alt$slot'),
+                    selected: selecionada == slot,
+                    label: Text(
+                      alts.isEmpty || slot >= ordemAlternativas.length
+                          ? letras[slot]
+                          : '${letras[slot]}) ${_textoAlt(alts, ordemAlternativas, slot)}',
+                    ),
+                    onSelected: (_) => onSelect(slot),
                   ),
-                ),
-              TextButton.icon(
-                key: const Key('btn-digitar-codigo'),
-                onPressed: _processando ? null : _digitarCodigo,
-                icon: const Icon(Icons.keyboard_outlined),
-                label: const Text('Digitar código'),
-              ),
-            ],
+              ],
+            ),
           ],
         ),
       ),
     );
+  }
+
+  String _textoAlt(List<String> alts, List<int> ordem, int slot) {
+    final int original = slot < ordem.length ? ordem[slot] : slot;
+    if (original < 0 || original >= alts.length) {
+      return '';
+    }
+    final String t = alts[original];
+    return t.length > 28 ? '${t.substring(0, 28)}…' : t;
   }
 }
 
@@ -375,7 +563,6 @@ class _AreaCamera extends StatelessWidget {
               )
             else
               Container(color: colors.surfaceContainerLowest),
-            // Moldura de mira.
             Center(
               child: Container(
                 width: 220,
@@ -418,105 +605,6 @@ class _AreaCamera extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _FolhaCard extends StatelessWidget {
-  const _FolhaCard({required this.folha});
-
-  final _FolhaIdentificada folha;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colors = theme.colorScheme;
-    final Aluno? aluno = folha.aluno;
-
-    return SingleChildScrollView(
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Row(
-                children: <Widget>[
-                  Icon(Icons.check_circle, color: colors.primary),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Folha identificada',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              _Linha(
-                icone: Icons.description_outlined,
-                rotulo: 'Prova',
-                valor: folha.prova.titulo,
-              ),
-              _Linha(
-                icone: Icons.person_outline,
-                rotulo: 'Aluno',
-                valor: aluno == null
-                    ? 'Aluno não encontrado (id ${folha.variacao.alunoId})'
-                    : '${aluno.nome} · matrícula ${aluno.matricula}',
-              ),
-              _Linha(
-                icone: Icons.shuffle,
-                rotulo: 'Versão',
-                valor:
-                    '${folha.variacao.ordemQuestoes.length} questões embaralhadas',
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'O QR Code foi lido pela câmera. A leitura das marcações '
-                'ainda é simulada nesta versão.',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: colors.onSurfaceVariant),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _Linha extends StatelessWidget {
-  const _Linha({
-    required this.icone,
-    required this.rotulo,
-    required this.valor,
-  });
-
-  final IconData icone;
-  final String rotulo;
-  final String valor;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Icon(icone, size: 20, color: theme.colorScheme.onSurfaceVariant),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(rotulo, style: theme.textTheme.labelMedium),
-                Text(valor, style: theme.textTheme.bodyLarge),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

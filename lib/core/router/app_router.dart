@@ -9,11 +9,9 @@ import 'package:meu_app/features/auth/presentation/pages/cadastro_page.dart';
 import 'package:meu_app/features/auth/presentation/pages/login_page.dart';
 import 'package:meu_app/features/correcao/presentation/pages/correcao_resultado_page.dart';
 import 'package:meu_app/features/correcao/presentation/pages/corrigir_prova_page.dart';
-import 'package:meu_app/features/geracao/presentation/pages/folha_respostas_page.dart';
 import 'package:meu_app/features/geracao/presentation/pages/gerar_prova_page.dart';
 import 'package:meu_app/features/geracao/presentation/pages/individualizacao_page.dart';
 import 'package:meu_app/features/home/presentation/pages/dashboard_page.dart';
-import 'package:meu_app/features/home/presentation/pages/mais_menu_page.dart';
 import 'package:meu_app/features/provas/presentation/pages/prova_detail_page.dart';
 import 'package:meu_app/features/provas/presentation/pages/prova_form_page.dart';
 import 'package:meu_app/features/provas/presentation/pages/prova_questoes_page.dart';
@@ -22,7 +20,6 @@ import 'package:meu_app/features/provas/presentation/pages/provas_list_page.dart
 import 'package:meu_app/features/provas/presentation/pages/variacao_preview_page.dart';
 import 'package:meu_app/features/questoes/presentation/pages/questao_form_page.dart';
 import 'package:meu_app/features/questoes/presentation/pages/questoes_list_page.dart';
-import 'package:meu_app/features/resultados/presentation/pages/estatisticas_page.dart';
 import 'package:meu_app/features/resultados/presentation/pages/nota_aluno_page.dart';
 import 'package:meu_app/features/resultados/presentation/pages/resultados_page.dart';
 import 'package:meu_app/features/turmas/presentation/pages/turma_detail_page.dart';
@@ -210,10 +207,8 @@ final goRouterProvider = Provider<GoRouter>((Ref ref) {
                       ),
                       GoRoute(
                         path: 'folha',
-                        builder: (BuildContext context, GoRouterState state) =>
-                            FolhaRespostasPage(
-                          provaId: state.pathParameters['provaId']!,
-                        ),
+                        redirect: (BuildContext context, GoRouterState state) =>
+                            '/provas/${state.pathParameters['provaId']}/gerar',
                       ),
                       GoRoute(
                         path: 'individualizacao',
@@ -231,46 +226,50 @@ final goRouterProvider = Provider<GoRouter>((Ref ref) {
           StatefulShellBranch(
             routes: <RouteBase>[
               GoRoute(
-                path: '/mais',
+                path: '/mais/correcao',
                 builder: (BuildContext context, GoRouterState state) =>
-                    const MaisMenuPage(),
+                    const CorrigirProvaPage(),
                 routes: <RouteBase>[
                   GoRoute(
-                    path: 'correcao',
+                    path: 'resultado/:correcaoId',
                     builder: (BuildContext context, GoRouterState state) =>
-                        const CorrigirProvaPage(),
-                    routes: <RouteBase>[
-                      GoRoute(
-                        path: 'resultado/:correcaoId',
-                        builder: (BuildContext context, GoRouterState state) =>
-                            CorrecaoResultadoPage(
-                          correcaoId: state.pathParameters['correcaoId']!,
-                        ),
-                      ),
-                    ],
-                  ),
-                  GoRoute(
-                    path: 'resultados',
-                    builder: (BuildContext context, GoRouterState state) =>
-                        const ResultadosPage(),
-                    routes: <RouteBase>[
-                      GoRoute(
-                        path: ':alunoId',
-                        builder: (BuildContext context, GoRouterState state) =>
-                            NotaAlunoPage(
-                          alunoId: state.pathParameters['alunoId']!,
-                        ),
-                      ),
-                    ],
-                  ),
-                  GoRoute(
-                    path: 'estatisticas',
-                    builder: (BuildContext context, GoRouterState state) =>
-                        const EstatisticasPage(),
+                        CorrecaoResultadoPage(
+                      correcaoId: state.pathParameters['correcaoId']!,
+                    ),
                   ),
                 ],
               ),
             ],
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/mais',
+        redirect: (BuildContext context, GoRouterState state) {
+          if (state.uri.path == '/mais' || state.uri.path == '/mais/') {
+            return '/mais/correcao';
+          }
+          return null;
+        },
+        routes: <RouteBase>[
+          GoRoute(
+            path: 'resultados',
+            builder: (BuildContext context, GoRouterState state) =>
+                const ResultadosPage(),
+            routes: <RouteBase>[
+              GoRoute(
+                path: ':alunoId',
+                builder: (BuildContext context, GoRouterState state) =>
+                    NotaAlunoPage(
+                  alunoId: state.pathParameters['alunoId']!,
+                ),
+              ),
+            ],
+          ),
+          GoRoute(
+            path: 'estatisticas',
+            redirect: (BuildContext context, GoRouterState state) =>
+                '/mais/resultados',
           ),
         ],
       ),

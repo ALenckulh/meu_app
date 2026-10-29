@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:meu_app/core/data/app_mock_store.dart';
 import 'package:meu_app/core/di/providers.dart';
 import 'package:meu_app/core/theme/app_gradients.dart';
 import 'package:meu_app/core/theme/app_semantic_colors.dart';
@@ -17,153 +16,162 @@ class CorrecaoResultadoPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AppMockStore store = ref.watch(appMockStoreProvider);
-    Correcao? correcao;
-    try {
-      correcao = store.correcoes.firstWhere((Correcao c) => c.id == correcaoId);
-    } catch (_) {
-      correcao = null;
-    }
+    return FutureBuilder<({Correcao? correcao, Aluno? aluno, VariacaoDeProva? variacao})>(
+      future: () async {
+        final Correcao? correcao =
+            await ref.read(correcaoRepositoryProvider).getById(correcaoId);
+        Aluno? aluno;
+        VariacaoDeProva? variacao;
+        if (correcao != null) {
+          aluno =
+              await ref.read(alunoRepositoryProvider).getById(correcao.alunoId);
+          variacao = await ref
+              .read(provaRepositoryProvider)
+              .getVariacaoById(correcao.variacaoId);
+        }
+        return (correcao: correcao, aluno: aluno, variacao: variacao);
+      }(),
+      builder: (
+        BuildContext context,
+        AsyncSnapshot<({Correcao? correcao, Aluno? aluno, VariacaoDeProva? variacao})> snapshot,
+      ) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final Correcao? correcao = snapshot.data?.correcao;
+        final Aluno? aluno = snapshot.data?.aluno;
+        final VariacaoDeProva? variacao = snapshot.data?.variacao;
 
-    if (correcao == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('Resultado')),
-        body: const Center(child: Text('Correção não encontrada.')),
-      );
-    }
+        if (correcao == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Resultado')),
+            body: const Center(child: Text('Correção não encontrada.')),
+          );
+        }
 
-    Aluno? aluno;
-    try {
-      aluno = store.alunos.firstWhere((Aluno a) => a.id == correcao!.alunoId);
-    } catch (_) {
-      aluno = null;
-    }
+        final ThemeData theme = Theme.of(context);
+        final ColorScheme colors = theme.colorScheme;
+        const List<String> labels = <String>['A', 'B', 'C', 'D'];
+        final int erros = correcao.totalQuestoes - correcao.acertos;
+        final int pct = correcao.totalQuestoes == 0
+            ? 0
+            : ((correcao.acertos / correcao.totalQuestoes) * 100).round();
 
-    VariacaoDeProva? variacao;
-    try {
-      variacao = store.variacoes
-          .firstWhere((VariacaoDeProva v) => v.id == correcao!.variacaoId);
-    } catch (_) {
-      variacao = null;
-    }
-
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme colors = theme.colorScheme;
-    const List<String> labels = <String>['A', 'B', 'C', 'D'];
-    final int erros = correcao.totalQuestoes - correcao.acertos;
-    final int pct = correcao.totalQuestoes == 0
-        ? 0
-        : ((correcao.acertos / correcao.totalQuestoes) * 100).round();
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Resultado da correção')),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-        children: <Widget>[
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: AppGradients.celebration(colors),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: <BoxShadow>[
-                BoxShadow(
-                  color: colors.primary.withValues(alpha: 0.16),
-                  blurRadius: 24,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              children: <Widget>[
-                Row(
-                  children: <Widget>[
-                    CircleAvatar(
-                      radius: 20,
-                      backgroundColor:
-                          colors.onPrimaryContainer.withValues(alpha: 0.15),
-                      child: Icon(Icons.check, color: colors.onPrimaryContainer),
+        return Scaffold(
+          appBar: AppBar(title: const Text('Resultado da correção')),
+          body: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+            children: <Widget>[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: AppGradients.celebration(colors),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: <BoxShadow>[
+                    BoxShadow(
+                      color: colors.primary.withValues(alpha: 0.16),
+                      blurRadius: 24,
+                      offset: const Offset(0, 10),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: <Widget>[
-                          Text(
-                            aluno?.nome ?? correcao.alunoId,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              color: colors.onPrimaryContainer,
-                              fontWeight: FontWeight.w700,
-                            ),
+                  ],
+                ),
+                child: Column(
+                  children: <Widget>[
+                    Row(
+                      children: <Widget>[
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor:
+                              colors.onPrimaryContainer.withValues(alpha: 0.15),
+                          child: Icon(Icons.check,
+                              color: colors.onPrimaryContainer),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: <Widget>[
+                              Text(
+                                aluno?.nome ?? correcao.alunoId,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  color: colors.onPrimaryContainer,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              Text(
+                                'Respostas informadas · var ${correcao.variacaoId}',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colors.onPrimaryContainer
+                                      .withValues(alpha: 0.8),
+                                ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            'Leitura simulada · QR ${correcao.variacaoId}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colors.onPrimaryContainer
-                                  .withValues(alpha: 0.8),
-                            ),
-                          ),
-                        ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      correcao.nota.toStringAsFixed(1),
+                      style: theme.textTheme.displaySmall?.copyWith(
+                        color: colors.onPrimaryContainer,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    Text(
+                      'nota final · $pct% de acerto',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color:
+                            colors.onPrimaryContainer.withValues(alpha: 0.85),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  correcao.nota.toStringAsFixed(1),
-                  style: theme.textTheme.displaySmall?.copyWith(
-                    color: colors.onPrimaryContainer,
-                    fontWeight: FontWeight.w800,
+              ),
+              const SizedBox(height: 16),
+              StatTileRow(
+                tiles: <Widget>[
+                  StatTile(
+                    value: '${correcao.acertos}',
+                    label: 'acertos',
+                    icon: Icons.check_circle_outline,
+                    accent: context.semantic.success,
                   ),
-                ),
-                Text(
-                  'nota final · $pct% de acerto',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colors.onPrimaryContainer.withValues(alpha: 0.85),
+                  StatTile(
+                    value: '$erros',
+                    label: 'erros',
+                    icon: Icons.cancel_outlined,
+                    accent: colors.error,
                   ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          StatTileRow(
-            tiles: <Widget>[
-              StatTile(
-                value: '${correcao.acertos}',
-                label: 'acertos',
-                icon: Icons.check_circle_outline,
-                accent: context.semantic.success,
+                  StatTile(
+                    value: '${correcao.totalQuestoes}',
+                    label: 'questões',
+                    icon: Icons.help_outline,
+                    accent: colors.secondary,
+                  ),
+                ],
               ),
-              StatTile(
-                value: '$erros',
-                label: 'erros',
-                icon: Icons.cancel_outlined,
-                accent: colors.error,
-              ),
-              StatTile(
-                value: '${correcao.totalQuestoes}',
-                label: 'questões',
-                icon: Icons.help_outline,
-                accent: colors.secondary,
-              ),
+              const SectionHeader('Respostas identificadas'),
+              ...List<Widget>.generate(correcao.respostas.length, (int i) {
+                final int marcada = correcao.respostas[i];
+                final String? qId = variacao?.ordemQuestoes[i];
+                final int? gabarito =
+                    qId == null ? null : variacao?.gabaritoRemapeado[qId];
+                final bool ok = gabarito != null && marcada == gabarito;
+                return _RespostaRow(
+                  numero: i + 1,
+                  ok: ok,
+                  marcada: labels[marcada],
+                  gabarito: gabarito != null ? labels[gabarito] : null,
+                );
+              }),
             ],
           ),
-          const SectionHeader('Respostas identificadas'),
-          ...List<Widget>.generate(correcao.respostas.length, (int i) {
-            final int marcada = correcao!.respostas[i];
-            final String? qId = variacao?.ordemQuestoes[i];
-            final int? gabarito =
-                qId == null ? null : variacao?.gabaritoRemapeado[qId];
-            final bool ok = gabarito != null && marcada == gabarito;
-            return _RespostaRow(
-              numero: i + 1,
-              ok: ok,
-              marcada: labels[marcada],
-              gabarito: gabarito != null ? labels[gabarito] : null,
-            );
-          }),
-        ],
-      ),
+        );
+      },
     );
   }
 }

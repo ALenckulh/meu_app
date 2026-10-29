@@ -1,16 +1,33 @@
-/// Professor autenticado no app (N1: mock).
+/// Professor autenticado no app.
 class Professor {
   const Professor({
     required this.id,
     required this.nome,
     required this.email,
-    required this.senha,
+    this.senha = '',
   });
 
   final String id;
   final String nome;
   final String email;
+
+  /// Não persistido no RTDB; só Firebase Auth.
   final String senha;
+
+  factory Professor.fromMap(String id, Map<dynamic, dynamic> map) {
+    return Professor(
+      id: id,
+      nome: map['nome'] as String? ?? '',
+      email: map['email'] as String? ?? '',
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'nome': nome,
+      'email': email,
+    };
+  }
 
   Professor copyWith({
     String? id,

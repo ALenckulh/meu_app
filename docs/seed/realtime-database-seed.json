@@ -1,0 +1,165 @@
+﻿{
+  "professores": {
+    "3JvuX2G7QzTn0dGDJtJHn1CwuY92": {
+      "nome": "Ana Paula",
+      "email": "ana@escola.com"
+    }
+  },
+  "turmas": {
+    "turma-1": {
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
+      "nome": "3º Ano A",
+      "disciplina": "Matemática",
+      "ano": 2026
+    },
+    "turma-2": {
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
+      "nome": "2º Ano B",
+      "disciplina": "Física",
+      "ano": 2026
+    }
+  },
+  "alunos": {
+    "aluno-1": {
+      "turmaId": "turma-1",
+      "nome": "João Silva",
+      "matricula": "2026001"
+    },
+    "aluno-2": {
+      "turmaId": "turma-1",
+      "nome": "Maria Souza",
+      "matricula": "2026002"
+    },
+    "aluno-3": {
+      "turmaId": "turma-1",
+      "nome": "Pedro Lima",
+      "matricula": "2026003"
+    },
+    "aluno-4": {
+      "turmaId": "turma-2",
+      "nome": "Carla Dias",
+      "matricula": "2026004"
+    },
+    "aluno-5": {
+      "turmaId": "turma-2",
+      "nome": "Lucas Alves",
+      "matricula": "2026005"
+    }
+  },
+  "questoes": {
+    "q1": {
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
+      "enunciado": "Qual é o resultado de 2 + 2?",
+      "alternativas": ["3", "4", "5", "6"],
+      "gabaritoIndex": 1,
+      "tags": ["matemática", "básico"]
+    },
+    "q2": {
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
+      "enunciado": "Qual é a raiz quadrada de 9?",
+      "alternativas": ["2", "3", "4", "9"],
+      "gabaritoIndex": 1,
+      "tags": ["matemática"]
+    },
+    "q3": {
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
+      "enunciado": "Quanto é 5 × 6?",
+      "alternativas": ["25", "30", "35", "40"],
+      "gabaritoIndex": 1,
+      "tags": ["matemática"]
+    },
+    "q4": {
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
+      "enunciado": "Qual unidade mede velocidade?",
+      "alternativas": ["kg", "m/s", "N", "J"],
+      "gabaritoIndex": 1,
+      "tags": ["física"]
+    },
+    "q5": {
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
+      "enunciado": "Qual é a aceleração da gravidade aproximada?",
+      "alternativas": ["5 m/s²", "9,8 m/s²", "15 m/s²", "20 m/s²"],
+      "gabaritoIndex": 1,
+      "tags": ["física"]
+    },
+    "q6": {
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
+      "enunciado": "Quanto é 10% de 200?",
+      "alternativas": ["10", "20", "30", "40"],
+      "gabaritoIndex": 1,
+      "tags": ["matemática"]
+    },
+    "q7": {
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
+      "enunciado": "Qual é o oposto de +5?",
+      "alternativas": ["+5", "-5", "0", "1/5"],
+      "gabaritoIndex": 1,
+      "tags": ["matemática"]
+    },
+    "q8": {
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
+      "enunciado": "Energia cinética depende principalmente de:",
+      "alternativas": ["cor", "massa e velocidade", "temperatura", "volume"],
+      "gabaritoIndex": 1,
+      "tags": ["física"]
+    }
+  },
+  "provas": {
+    "prova-1": {
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
+      "turmaId": "turma-1",
+      "titulo": "Prova Diagnóstica 1",
+      "questaoIds": ["q1", "q2", "q3", "q6"],
+      "quantidadeVariacoes": 2
+    }
+  },
+  "variacoes_de_prova": {
+    "var-1": {
+      "provaId": "prova-1",
+      "alunoId": "aluno-1",
+      "ordemQuestoes": ["q1", "q2", "q3", "q6"],
+      "ordemAlternativas": {
+        "q1": [0, 1, 2, 3],
+        "q2": [0, 1, 2, 3],
+        "q3": [0, 1, 2, 3],
+        "q6": [0, 1, 2, 3]
+      },
+      "gabaritoRemapeado": {
+        "q1": 1,
+        "q2": 1,
+        "q3": 1,
+        "q6": 1
+      }
+    }
+  },
+  "correcoes": {
+    "corr-1": {
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
+      "variacaoId": "var-1",
+      "alunoId": "aluno-1",
+      "respostas": [1, 1, 0, 1],
+      "nota": 7.5,
+      "acertos": 3,
+      "totalQuestoes": 4
+    },
+    "corr-2": {
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
+      "variacaoId": "var-1",
+      "alunoId": "aluno-2",
+      "respostas": [1, 1, 1, 1],
+      "nota": 10,
+      "acertos": 4,
+      "totalQuestoes": 4
+    },
+    "corr-3": {
+      "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
+      "variacaoId": "var-1",
+      "alunoId": "aluno-3",
+      "respostas": [0, 1, 0, 0],
+      "nota": 2.5,
+      "acertos": 1,
+      "totalQuestoes": 4
+    }
+  }
+}
+

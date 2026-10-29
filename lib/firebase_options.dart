@@ -40,6 +40,10 @@ class DefaultFirebaseOptions {
     }
   }
 
+  // Root API URL from Console → Realtime Database → Data.
+  static const String databaseURL =
+      'https://app-correcao-provas-default-rtdb.firebaseio.com';
+
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyBmaOSn6iS-2g62Yy5wrMNiTBt8rCs5t8k',
     appId: '1:980988023923:web:37c8e3e57ed5abd7024606',
@@ -47,6 +51,7 @@ class DefaultFirebaseOptions {
     projectId: 'app-correcao-provas',
     authDomain: 'app-correcao-provas.firebaseapp.com',
     storageBucket: 'app-correcao-provas.firebasestorage.app',
+    databaseURL: databaseURL,
   );
 
   static const FirebaseOptions android = FirebaseOptions(
@@ -55,6 +60,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '980988023923',
     projectId: 'app-correcao-provas',
     storageBucket: 'app-correcao-provas.firebasestorage.app',
+    databaseURL: databaseURL,
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
@@ -63,6 +69,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '980988023923',
     projectId: 'app-correcao-provas',
     storageBucket: 'app-correcao-provas.firebasestorage.app',
+    databaseURL: databaseURL,
     iosBundleId: 'com.example.meuApp',
   );
 
@@ -72,6 +79,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '980988023923',
     projectId: 'app-correcao-provas',
     storageBucket: 'app-correcao-provas.firebasestorage.app',
+    databaseURL: databaseURL,
     iosBundleId: 'com.example.meuApp',
   );
 
@@ -82,5 +90,6 @@ class DefaultFirebaseOptions {
     projectId: 'app-correcao-provas',
     authDomain: 'app-correcao-provas.firebaseapp.com',
     storageBucket: 'app-correcao-provas.firebasestorage.app',
+    databaseURL: databaseURL,
   );
 }

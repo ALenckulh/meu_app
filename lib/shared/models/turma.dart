@@ -13,6 +13,25 @@ class Turma {
   final String disciplina;
   final int ano;
 
+  factory Turma.fromMap(String id, Map<dynamic, dynamic> map) {
+    return Turma(
+      id: id,
+      professorId: map['professorId'] as String? ?? '',
+      nome: map['nome'] as String? ?? '',
+      disciplina: map['disciplina'] as String? ?? '',
+      ano: (map['ano'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return <String, dynamic>{
+      'professorId': professorId,
+      'nome': nome,
+      'disciplina': disciplina,
+      'ano': ano,
+    };
+  }
+
   Turma copyWith({
     String? id,
     String? professorId,

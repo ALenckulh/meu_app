@@ -6,6 +6,7 @@ import 'package:meu_app/core/widgets/feedback.dart';
 import 'package:meu_app/core/widgets/section_header.dart';
 import 'package:meu_app/shared/models/prova.dart';
 import 'package:meu_app/shared/models/questao.dart';
+import 'package:meu_app/shared/models/turma.dart';
 
 class ProvaFormPage extends ConsumerStatefulWidget {
   const ProvaFormPage({super.key});
@@ -19,6 +20,8 @@ class _ProvaFormPageState extends ConsumerState<ProvaFormPage> {
   final TextEditingController _tituloController = TextEditingController();
   final Set<String> _selecionadas = <String>{};
   List<Questao> _banco = <Questao>[];
+  List<Turma> _turmas = <Turma>[];
+  String? _turmaId;
   bool _loading = true;
   String? _error;
 
@@ -29,9 +32,19 @@ class _ProvaFormPageState extends ConsumerState<ProvaFormPage> {
   }
 
   Future<void> _load() async {
-    _banco = await ref.read(questaoRepositoryProvider).listAll();
+    final String? professorId = ref.read(authSessionProvider)?.id;
+    final List<Questao> banco =
+        await ref.read(questaoRepositoryProvider).listAll();
+    final List<Turma> turmas = professorId == null
+        ? <Turma>[]
+        : await ref.read(turmaRepositoryProvider).listByProfessor(professorId);
     if (mounted) {
-      setState(() => _loading = false);
+      setState(() {
+        _banco = banco;
+        _turmas = turmas;
+        _turmaId = turmas.isNotEmpty ? turmas.first.id : null;
+        _loading = false;
+      });
     }
   }
 
@@ -49,9 +62,20 @@ class _ProvaFormPageState extends ConsumerState<ProvaFormPage> {
       setState(() => _error = 'Selecione ao menos uma questão.');
       return;
     }
+    if (_turmaId == null || _turmaId!.isEmpty) {
+      setState(() => _error = 'Selecione a turma da prova.');
+      return;
+    }
+    final String? professorId = ref.read(authSessionProvider)?.id;
+    if (professorId == null) {
+      setState(() => _error = 'Sessão inválida. Faça login novamente.');
+      return;
+    }
     final Prova prova = await ref.read(provaRepositoryProvider).create(
           Prova(
             id: '',
+            professorId: professorId,
+            turmaId: _turmaId!,
             titulo: _tituloController.text.trim(),
             questaoIds: _selecionadas.toList(),
           ),
@@ -61,7 +85,7 @@ class _ProvaFormPageState extends ConsumerState<ProvaFormPage> {
       return;
     }
     showSuccessSnackBar(context, 'Prova criada.');
-    context.go('/provas/${prova.id}/questoes');
+    context.go('/provas/${prova.id}');
   }
 
   @override
@@ -91,20 +115,51 @@ class _ProvaFormPageState extends ConsumerState<ProvaFormPage> {
                         Card(
                           child: Padding(
                             padding: const EdgeInsets.all(16),
-                            child: TextFormField(
-                              key: const Key('input-prova-titulo'),
-                              controller: _tituloController,
-                              decoration: const InputDecoration(
-                                labelText: 'Título',
-                                hintText: 'Informe o título da prova',
-                                helperText:
-                                    'Nome de identificação da prova.',
-                                prefixIcon: Icon(Icons.title),
-                              ),
-                              validator: (String? v) =>
-                                  (v == null || v.isEmpty)
-                                      ? 'Informe o título'
-                                      : null,
+                            child: Column(
+                              children: <Widget>[
+                                TextFormField(
+                                  key: const Key('input-prova-titulo'),
+                                  controller: _tituloController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Título',
+                                    hintText: 'Informe o título da prova',
+                                    helperText:
+                                        'Nome de identificação da prova.',
+                                    prefixIcon: Icon(Icons.title),
+                                  ),
+                                  validator: (String? v) =>
+                                      (v == null || v.isEmpty)
+                                          ? 'Informe o título'
+                                          : null,
+                                ),
+                                const SizedBox(height: 12),
+                                DropdownButtonFormField<String>(
+                                  key: const Key('select-prova-turma'),
+                                  initialValue: _turmaId,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Turma',
+                                    hintText: 'Selecione a turma',
+                                    helperText:
+                                        'Alunos desta turma usam as variações.',
+                                    prefixIcon: Icon(Icons.groups_outlined),
+                                  ),
+                                  items: _turmas
+                                      .map(
+                                        (Turma t) => DropdownMenuItem<String>(
+                                          value: t.id,
+                                          child: Text(
+                                              '${t.nome} · ${t.disciplina}'),
+                                        ),
+                                      )
+                                      .toList(),
+                                  onChanged: (String? v) =>
+                                      setState(() => _turmaId = v),
+                                  validator: (String? v) =>
+                                      (v == null || v.isEmpty)
+                                          ? 'Selecione a turma'
+                                          : null,
+                                ),
+                              ],
                             ),
                           ),
                         ),
@@ -121,7 +176,9 @@ class _ProvaFormPageState extends ConsumerState<ProvaFormPage> {
                         Card(
                           child: Column(
                             children: <Widget>[
-                              for (int i = 0; i < _banco.length; i++) ...<Widget>[
+                              for (int i = 0;
+                                  i < _banco.length;
+                                  i++) ...<Widget>[
                                 if (i > 0)
                                   Divider(
                                     height: 1,
@@ -153,7 +210,7 @@ class _ProvaFormPageState extends ConsumerState<ProvaFormPage> {
                       key: const Key('btn-salvar-prova'),
                       onPressed: _save,
                       icon: const Icon(Icons.arrow_forward),
-                      label: const Text('Salvar e ordenar questões'),
+                      label: const Text('Salvar prova'),
                     ),
                   ),
                 ],

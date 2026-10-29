@@ -1,28 +1,51 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/foundation.dart';
+import 'package:meu_app/core/data/rtdb.dart';
+import 'package:meu_app/core/data/rtdb_paths.dart';
 import 'package:meu_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:meu_app/shared/models/professor.dart';
 
-/// Implementação do [AuthRepository] integrada ao Firebase Authentication.
+/// Auth + perfil em Realtime Database (`professores/{uid}`).
+///
+/// Sucesso de Auth **não** depende do RTDB: se o perfil falhar (regras/URL),
+/// login/cadastro ainda retornam [Professor] a partir do Firebase Auth.
 class FirebaseAuthRepository implements AuthRepository {
-  FirebaseAuthRepository({this.firebaseAuth});
+  FirebaseAuthRepository({
+    this.firebaseAuth,
+    FirebaseDatabase? database,
+  }) : _db = database ?? rtdb;
 
   final FirebaseAuth? firebaseAuth;
+  final FirebaseDatabase _db;
 
   FirebaseAuth get _auth => firebaseAuth ?? FirebaseAuth.instance;
 
-  Professor? _mapFirebaseUser(User? user) {
-    if (user == null) {
-      return null;
-    }
+  Professor _fromAuthUser(User user, {String? nomeOverride}) {
     return Professor(
       id: user.uid,
-      nome: (user.displayName != null && user.displayName!.trim().isNotEmpty)
-          ? user.displayName!.trim()
-          : (user.email?.split('@').first ?? 'Professor'),
+      nome: nomeOverride ??
+          ((user.displayName != null && user.displayName!.trim().isNotEmpty)
+              ? user.displayName!.trim()
+              : (user.email?.split('@').first ?? 'Professor')),
       email: user.email ?? '',
-      senha: '',
     );
+  }
+
+  /// Best-effort: lê/cria `professores/{uid}`. Erros RTDB são engolidos.
+  Future<void> _syncProfessorBestEffort(Professor professor) async {
+    try {
+      final DatabaseReference ref =
+          _db.ref(RtdbPaths.professor(professor.id));
+      final DataSnapshot snap = await ref.get();
+      if (snap.exists && snap.value != null) {
+        return;
+      }
+      await ref.set(professor.toMap());
+    } catch (e, st) {
+      debugPrint('RTDB professores sync failed: $e\n$st');
+    }
   }
 
   @override
@@ -30,7 +53,11 @@ class FirebaseAuthRepository implements AuthRepository {
     if (firebaseAuth == null && Firebase.apps.isEmpty) {
       return null;
     }
-    return _mapFirebaseUser(_auth.currentUser);
+    final User? user = _auth.currentUser;
+    if (user == null) {
+      return null;
+    }
+    return _fromAuthUser(user);
   }
 
   @override
@@ -40,7 +67,15 @@ class FirebaseAuthRepository implements AuthRepository {
         email: email,
         password: senha,
       );
-      return _mapFirebaseUser(credential.user);
+      final User? user = credential.user;
+      if (user == null) {
+        return null;
+      }
+      final Professor professor = _fromAuthUser(user);
+      await _syncProfessorBestEffort(professor);
+      return professor;
+    } on FirebaseAuthException {
+      return null;
     } catch (_) {
       return null;
     }
@@ -58,23 +93,15 @@ class FirebaseAuthRepository implements AuthRepository {
       password: senha,
     );
 
-    if (credential.user != null) {
-      await credential.user!.updateDisplayName(nome);
-      await credential.user!.reload();
-    }
+    User user = credential.user!;
+    await user.updateDisplayName(nome);
+    await user.reload();
+    user = _auth.currentUser ?? user;
 
-    final User? updatedUser = _auth.currentUser;
-    final Professor professor = _mapFirebaseUser(updatedUser) ??
-        Professor(
-          id: credential.user!.uid,
-          nome: nome,
-          email: email,
-          senha: '',
-        );
+    final Professor professor = _fromAuthUser(user, nomeOverride: nome);
+    await _syncProfessorBestEffort(professor);
 
-    // Desconecta após o cadastro para permitir login explícito na LoginPage
     await _auth.signOut();
-
     return professor;
   }
 
