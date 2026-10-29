@@ -1,10 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:meu_app/core/data/app_mock_store.dart';
 import 'package:meu_app/core/di/providers.dart';
 import 'package:meu_app/core/theme/app_semantic_colors.dart';
 import 'package:meu_app/shared/models/questao.dart';
 import 'package:meu_app/shared/models/variacao_de_prova.dart';
+
+class _PreviewDados {
+  const _PreviewDados({required this.variacao, required this.questoes});
+
+  final VariacaoDeProva? variacao;
+  final Map<String, Questao> questoes;
+}
+
+final _previewProvider =
+    FutureProvider.autoDispose.family<_PreviewDados, String>(
+  (Ref ref, String variacaoId) async {
+    final VariacaoDeProva? variacao =
+        await ref.read(provaRepositoryProvider).getVariacaoById(variacaoId);
+    final List<Questao> questoes =
+        await ref.read(questaoRepositoryProvider).listAll();
+    return _PreviewDados(
+      variacao: variacao,
+      questoes: <String, Questao>{for (final Questao q in questoes) q.id: q},
+    );
+  },
+);
 
 class VariacaoPreviewPage extends ConsumerWidget {
   const VariacaoPreviewPage({
@@ -18,22 +38,35 @@ class VariacaoPreviewPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final AppMockStore store = ref.watch(appMockStoreProvider);
-    VariacaoDeProva? variacao;
-    try {
-      variacao =
-          store.variacoes.firstWhere((VariacaoDeProva v) => v.id == variacaoId);
-    } catch (_) {
-      variacao = null;
-    }
+    final AsyncValue<_PreviewDados> async = ref.watch(_previewProvider(variacaoId));
 
-    if (variacao == null) {
-      return Scaffold(
+    return async.when(
+      loading: () => Scaffold(
+        appBar: AppBar(title: const Text('Prévia da variação')),
+        body: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (Object e, StackTrace _) => Scaffold(
         appBar: AppBar(title: const Text('Variação')),
-        body: const Center(child: Text('Variação não encontrada.')),
-      );
-    }
+        body: const Center(child: Text('Não foi possível carregar a variação.')),
+      ),
+      data: (_PreviewDados dados) {
+        final VariacaoDeProva? variacao = dados.variacao;
+        if (variacao == null) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Variação')),
+            body: const Center(child: Text('Variação não encontrada.')),
+          );
+        }
+        return _conteudo(context, variacao, dados.questoes);
+      },
+    );
+  }
 
+  Widget _conteudo(
+    BuildContext context,
+    VariacaoDeProva variacao,
+    Map<String, Questao> questoes,
+  ) {
     final ThemeData theme = Theme.of(context);
     final ColorScheme colors = theme.colorScheme;
     const List<String> labels = <String>['A', 'B', 'C', 'D'];
@@ -45,9 +78,16 @@ class VariacaoPreviewPage extends ConsumerWidget {
         itemCount: variacao.ordemQuestoes.length,
         separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (BuildContext context, int index) {
-          final String qId = variacao!.ordemQuestoes[index];
-          final Questao questao =
-              store.questoes.firstWhere((Questao q) => q.id == qId);
+          final String qId = variacao.ordemQuestoes[index];
+          final Questao? questao = questoes[qId];
+          if (questao == null) {
+            return const Card(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('Esta questão foi removida do banco.'),
+              ),
+            );
+          }
           final List<int> perm =
               variacao.ordemAlternativas[qId] ?? <int>[0, 1, 2, 3];
           final int gabarito = variacao.gabaritoRemapeado[qId] ?? 0;

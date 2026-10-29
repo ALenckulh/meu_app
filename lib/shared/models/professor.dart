@@ -1,10 +1,13 @@
-/// Professor autenticado no app (N1: mock).
+/// Professor autenticado no app.
+///
+/// `senha` só existe para o mock do N1 (AuthMockRepository). Com o Firebase Auth
+/// a senha nunca fica no app depois do login e nunca é salva em lugar nenhum.
 class Professor {
   const Professor({
     required this.id,
     required this.nome,
     required this.email,
-    required this.senha,
+    this.senha = '',
   });
 
   final String id;

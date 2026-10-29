@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meu_app/core/di/providers.dart';
+import 'package:meu_app/core/utils/validators.dart';
 import 'package:meu_app/core/widgets/feedback.dart';
+import 'package:meu_app/features/auth/domain/repositories/auth_repository.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
@@ -13,10 +15,8 @@ class LoginPage extends ConsumerStatefulWidget {
 
 class _LoginPageState extends ConsumerState<LoginPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-  final TextEditingController _emailController =
-      TextEditingController(text: 'ana@escola.com');
-  final TextEditingController _senhaController =
-      TextEditingController(text: '123456');
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _senhaController = TextEditingController();
   String? _error;
   bool _loading = false;
 
@@ -35,18 +35,31 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       _loading = true;
       _error = null;
     });
-    final bool ok = await ref.read(authSessionProvider.notifier).login(
-          _emailController.text.trim(),
-          _senhaController.text,
-        );
-    if (!mounted) {
-      return;
-    }
-    setState(() => _loading = false);
-    if (ok) {
-      context.go('/home');
-    } else {
-      setState(() => _error = 'E-mail ou senha inválidos.');
+    try {
+      final bool ok = await ref.read(authSessionProvider.notifier).login(
+            _emailController.text.trim(),
+            _senhaController.text,
+          );
+      if (!mounted) {
+        return;
+      }
+      if (ok) {
+        context.go('/home');
+      } else {
+        setState(() => _error = 'E-mail ou senha inválidos.');
+      }
+    } on AuthFailure catch (e) {
+      if (mounted) {
+        setState(() => _error = e.message);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = 'Não foi possível entrar. Tente novamente.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
@@ -71,7 +84,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'N1 — protótipo com dados mockados',
+                      'Acesse com a sua conta de professor',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
@@ -94,8 +107,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         helperText: 'Use o e-mail da conta do professor.',
                       ),
                       keyboardType: TextInputType.emailAddress,
-                      validator: (String? v) =>
-                          (v == null || v.isEmpty) ? 'Informe o e-mail' : null,
+                      textInputAction: TextInputAction.next,
+                      validator: Validators.email,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
@@ -107,6 +120,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                         hintText: 'Informe a senha',
                         helperText: 'Senha de acesso ao aplicativo.',
                       ),
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) {
+                        if (!_loading) {
+                          _submit();
+                        }
+                      },
                       validator: (String? v) =>
                           (v == null || v.isEmpty) ? 'Informe a senha' : null,
                     ),

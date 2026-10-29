@@ -2,13 +2,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meu_app/core/data/app_mock_store.dart';
 import 'package:meu_app/features/alunos/data/repositories/aluno_mock_repository.dart';
 import 'package:meu_app/features/alunos/domain/repositories/aluno_repository.dart';
-import 'package:meu_app/features/auth/data/repositories/auth_mock_repository.dart';
+import 'package:meu_app/features/auth/data/repositories/auth_firebase_repository.dart';
 import 'package:meu_app/features/auth/domain/repositories/auth_repository.dart';
 import 'package:meu_app/features/correcao/data/repositories/correcao_mock_repository.dart';
 import 'package:meu_app/features/correcao/domain/repositories/correcao_repository.dart';
-import 'package:meu_app/features/provas/data/repositories/prova_mock_repository.dart';
+import 'package:meu_app/features/provas/data/repositories/prova_firestore_repository.dart';
 import 'package:meu_app/features/provas/domain/repositories/prova_repository.dart';
-import 'package:meu_app/features/questoes/data/repositories/questao_mock_repository.dart';
+import 'package:meu_app/features/questoes/data/repositories/questao_firestore_repository.dart';
 import 'package:meu_app/features/questoes/domain/repositories/questao_repository.dart';
 import 'package:meu_app/features/turmas/data/repositories/turma_mock_repository.dart';
 import 'package:meu_app/features/turmas/domain/repositories/turma_repository.dart';
@@ -19,7 +19,7 @@ final appMockStoreProvider = Provider<AppMockStore>((Ref ref) {
 });
 
 final authRepositoryProvider = Provider<AuthRepository>((Ref ref) {
-  return AuthMockRepository(ref.watch(appMockStoreProvider));
+  return AuthFirebaseRepository();
 });
 
 final turmaRepositoryProvider = Provider<TurmaRepository>((Ref ref) {
@@ -31,11 +31,15 @@ final alunoRepositoryProvider = Provider<AlunoRepository>((Ref ref) {
 });
 
 final questaoRepositoryProvider = Provider<QuestaoRepository>((Ref ref) {
-  return QuestaoMockRepository(ref.watch(appMockStoreProvider));
+  return QuestaoFirestoreRepository(
+    professorId: () => ref.read(authSessionProvider)?.id,
+  );
 });
 
 final provaRepositoryProvider = Provider<ProvaRepository>((Ref ref) {
-  return ProvaMockRepository(ref.watch(appMockStoreProvider));
+  return ProvaFirestoreRepository(
+    professorId: () => ref.read(authSessionProvider)?.id,
+  );
 });
 
 final correcaoRepositoryProvider = Provider<CorrecaoRepository>((Ref ref) {
@@ -52,6 +56,10 @@ class AuthSessionNotifier extends Notifier<Professor?> {
     final Professor? user =
         await ref.read(authRepositoryProvider).login(email, senha);
     state = user;
+    if (user != null) {
+      // Força as listas a recarregarem com os dados do professor logado.
+      ref.read(listVersionProvider.notifier).bump();
+    }
     return user != null;
   }
 

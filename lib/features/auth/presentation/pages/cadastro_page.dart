@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:meu_app/core/di/providers.dart';
+import 'package:meu_app/core/utils/validators.dart';
 import 'package:meu_app/core/widgets/feedback.dart';
+import 'package:meu_app/features/auth/domain/repositories/auth_repository.dart';
 
 class CadastroPage extends ConsumerStatefulWidget {
   const CadastroPage({super.key});
@@ -46,8 +48,14 @@ class _CadastroPageState extends ConsumerState<CadastroPage> {
       }
       showSuccessSnackBar(context, 'Conta criada com sucesso.');
       context.go('/login');
+    } on AuthFailure catch (e) {
+      if (mounted) {
+        setState(() => _error = e.message);
+      }
     } catch (_) {
-      setState(() => _error = 'Não foi possível criar a conta.');
+      if (mounted) {
+        setState(() => _error = 'Não foi possível criar a conta.');
+      }
     } finally {
       if (mounted) {
         setState(() => _loading = false);
@@ -85,8 +93,17 @@ class _CadastroPageState extends ConsumerState<CadastroPage> {
                         hintText: 'Informe o nome',
                         helperText: 'Nome do professor.',
                       ),
-                      validator: (String? v) =>
-                          (v == null || v.isEmpty) ? 'Informe o nome' : null,
+                      textInputAction: TextInputAction.next,
+                      validator: (String? v) {
+                        final String nome = (v ?? '').trim();
+                        if (nome.isEmpty) {
+                          return 'Informe o nome';
+                        }
+                        if (nome.length > 80) {
+                          return 'Nome muito longo';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
@@ -97,8 +114,9 @@ class _CadastroPageState extends ConsumerState<CadastroPage> {
                         hintText: 'Informe o e-mail',
                         helperText: 'E-mail usado no login.',
                       ),
-                      validator: (String? v) =>
-                          (v == null || v.isEmpty) ? 'Informe o e-mail' : null,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      validator: Validators.email,
                     ),
                     const SizedBox(height: 12),
                     TextFormField(
@@ -108,10 +126,15 @@ class _CadastroPageState extends ConsumerState<CadastroPage> {
                       decoration: const InputDecoration(
                         labelText: 'Senha',
                         hintText: 'Informe a senha',
-                        helperText: 'Mínimo sugerido: 6 caracteres.',
+                        helperText: 'Mínimo de 8 caracteres, com letras e números.',
                       ),
-                      validator: (String? v) =>
-                          (v == null || v.length < 6) ? 'Senha muito curta' : null,
+                      textInputAction: TextInputAction.done,
+                      onFieldSubmitted: (_) {
+                        if (!_loading) {
+                          _submit();
+                        }
+                      },
+                      validator: Validators.senhaNova,
                     ),
                     const SizedBox(height: 24),
                     FilledButton(

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "873174063451",
+    "project_id": "correcao-provas-9cd51",
+    "storage_bucket": "correcao-provas-9cd51.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:873174063451:android:7817a0c7571fec2d56a27e",
+        "android_client_info": {
+          "package_name": "com.example.meu_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyChLYBx0mLBJDST8RSh_aLDuZd1Jxl2hHk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

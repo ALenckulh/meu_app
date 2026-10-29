@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isOwner() { return signedIn() && resource.data.professorId == request.auth.uid; }
+    function ownsNew() { return signedIn() && request.resource.data.professorId == request.auth.uid; }
+    function sameOwner() { return request.resource.data.professorId == resource.data.professorId; }
+
+    match /professores/{uid} {
+      allow read, create, update: if signedIn() && request.auth.uid == uid;
+      allow delete: if false;
+    }
+
+    match /questoes/{id} {
+      function validaQuestao() {
+        let d = request.resource.data;
+        return d.enunciado is string && d.enunciado.size() >= 1 && d.enunciado.size() <= 2000
+          && d.alternativas is list && d.alternativas.size() == 4
+          && d.gabaritoIndex is int && d.gabaritoIndex >= 0 && d.gabaritoIndex <= 3
+          && (!('tags' in d) || d.tags is list);
+      }
+      allow read, delete: if isOwner();
+      allow create: if ownsNew() && validaQuestao();
+      allow update: if isOwner() && sameOwner() && validaQuestao();
+    }
+
+    match /provas/{id} {
+      function validaProva() {
+        let d = request.resource.data;
+        return d.titulo is string && d.titulo.size() >= 1 && d.titulo.size() <= 200
+          && d.questaoIds is list
+          && d.quantidadeVariacoes is int && d.quantidadeVariacoes >= 1;
+      }
+      allow read, delete: if isOwner();
+      allow create: if ownsNew() && validaProva();
+      allow update: if isOwner() && sameOwner() && validaProva();
+    }
+
+    match /variacoes/{id} {
+      allow read, delete: if isOwner();
+      allow create: if ownsNew()
+        && request.resource.data.provaId is string
+        && request.resource.data.ordemQuestoes is list;
+      allow update: if false;
+    }
+  }
+}

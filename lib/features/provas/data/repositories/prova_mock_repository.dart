@@ -56,6 +56,16 @@ class ProvaMockRepository implements ProvaRepository {
   }
 
   @override
+  Future<VariacaoDeProva?> getVariacaoById(String id) async {
+    for (final VariacaoDeProva v in _store.variacoes) {
+      if (v.id == id) {
+        return v;
+      }
+    }
+    return null;
+  }
+
+  @override
   Future<VariacaoDeProva> gerarVariacao({
     required String provaId,
     required String alunoId,
