@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:meu_app/core/di/providers.dart';
 import 'package:meu_app/core/widgets/section_header.dart';
+import 'package:meu_app/features/geracao/data/prova_pdf_service.dart';
+import 'package:meu_app/features/geracao/domain/qr_payload.dart';
+import 'package:meu_app/features/geracao/presentation/widgets/pdf_acoes.dart';
 import 'package:meu_app/shared/models/aluno.dart';
+import 'package:meu_app/shared/models/prova.dart';
+import 'package:meu_app/shared/models/questao.dart';
+import 'package:meu_app/shared/models/turma.dart';
 import 'package:meu_app/shared/models/variacao_de_prova.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+/// Gera provas individualizadas (RF04): cada aluno recebe uma variação
+/// embaralhada e uma folha de respostas com QR Code que identifica a prova,
+/// a variação e o aluno (RF05).
 class IndividualizacaoPage extends ConsumerStatefulWidget {
   const IndividualizacaoPage({super.key, required this.provaId});
 
@@ -17,6 +27,10 @@ class IndividualizacaoPage extends ConsumerStatefulWidget {
 }
 
 class _IndividualizacaoPageState extends ConsumerState<IndividualizacaoPage> {
+  Prova? _prova;
+  Map<String, Questao> _banco = <String, Questao>{};
+  List<Turma> _turmas = <Turma>[];
+  String? _turmaId;
   List<Aluno> _alunos = <Aluno>[];
   String? _alunoId;
   VariacaoDeProva? _variacao;
@@ -29,59 +43,121 @@ class _IndividualizacaoPageState extends ConsumerState<IndividualizacaoPage> {
   }
 
   Future<void> _load() async {
-    final List<Aluno> alunos =
-        await ref.read(alunoRepositoryProvider).listByTurma('turma-1');
-    final List<VariacaoDeProva> vars =
-        await ref.read(provaRepositoryProvider).listVariacoes(widget.provaId);
-    _alunos = alunos;
-    _alunoId = alunos.isNotEmpty ? alunos.first.id : null;
-    if (_alunoId != null) {
-      try {
-        _variacao =
-            vars.firstWhere((VariacaoDeProva v) => v.alunoId == _alunoId);
-      } catch (_) {
-        _variacao = vars.isNotEmpty ? vars.first : null;
-      }
+    final Prova? prova =
+        await ref.read(provaRepositoryProvider).getById(widget.provaId);
+    final List<Questao> todas =
+        await ref.read(questaoRepositoryProvider).listAll();
+    final String? professorId = ref.read(authSessionProvider)?.id;
+    final List<Turma> turmas = professorId == null
+        ? <Turma>[]
+        : await ref.read(turmaRepositoryProvider).listByProfessor(professorId);
+
+    _prova = prova;
+    _banco = <String, Questao>{for (final Questao q in todas) q.id: q};
+    _turmas = turmas;
+
+    if (turmas.isNotEmpty) {
+      await _onTurmaChanged(turmas.first.id, atualizar: false);
     }
     if (mounted) {
       setState(() => _loading = false);
     }
   }
 
-  Future<void> _onAlunoChanged(String? id) async {
-    setState(() => _alunoId = id);
-    if (id == null) {
-      return;
+  Future<void> _onTurmaChanged(String? turmaId, {bool atualizar = true}) async {
+    _turmaId = turmaId;
+    _alunos = turmaId == null
+        ? <Aluno>[]
+        : await ref.read(alunoRepositoryProvider).listByTurma(turmaId);
+    _alunoId = null;
+    _variacao = null;
+    if (_alunos.isNotEmpty) {
+      await _onAlunoChanged(_alunos.first.id, atualizar: false);
     }
+    if (atualizar && mounted) {
+      setState(() {});
+    }
+  }
+
+  Future<void> _onAlunoChanged(String? id, {bool atualizar = true}) async {
+    _alunoId = id;
+    _variacao = id == null ? null : await _variacaoDoAluno(id);
+    if (atualizar && mounted) {
+      setState(() {});
+    }
+  }
+
+  /// Usa a variação já existente do aluno ou gera uma nova embaralhada.
+  Future<VariacaoDeProva> _variacaoDoAluno(
+    String alunoId, [
+    List<VariacaoDeProva>? existentes,
+  ]) async {
+    final List<VariacaoDeProva> vars = existentes ??
+        await ref.read(provaRepositoryProvider).listVariacoes(widget.provaId);
+    for (final VariacaoDeProva v in vars) {
+      if (v.alunoId == alunoId) {
+        return v;
+      }
+    }
+    return ref.read(provaRepositoryProvider).gerarVariacao(
+          provaId: widget.provaId,
+          alunoId: alunoId,
+          embaralharQuestoes: true,
+          embaralharAlternativas: true,
+        );
+  }
+
+  Turma? get _turma {
+    for (final Turma t in _turmas) {
+      if (t.id == _turmaId) {
+        return t;
+      }
+    }
+    return null;
+  }
+
+  Aluno? get _aluno {
+    for (final Aluno a in _alunos) {
+      if (a.id == _alunoId) {
+        return a;
+      }
+    }
+    return null;
+  }
+
+  /// Uma cópia (prova + folha) para cada aluno da turma, num único PDF.
+  Future<List<CopiaProva>> _copiasDaTurma() async {
     final List<VariacaoDeProva> vars =
         await ref.read(provaRepositoryProvider).listVariacoes(widget.provaId);
-    VariacaoDeProva? found;
-    try {
-      found = vars.firstWhere((VariacaoDeProva v) => v.alunoId == id);
-    } catch (_) {
-      found = await ref.read(provaRepositoryProvider).gerarVariacao(
-            provaId: widget.provaId,
-            alunoId: id,
-            embaralharQuestoes: true,
-            embaralharAlternativas: true,
-          );
+    final List<CopiaProva> copias = <CopiaProva>[];
+    for (final Aluno aluno in _alunos) {
+      final VariacaoDeProva variacao = await _variacaoDoAluno(aluno.id, vars);
+      copias.add(
+        CopiaProva.individual(
+          variacao: variacao,
+          banco: _banco,
+          aluno: aluno,
+          turma: _turma,
+        ),
+      );
     }
-    if (mounted) {
-      setState(() => _variacao = found);
-    }
+    return copias;
   }
 
   @override
   Widget build(BuildContext context) {
-    Aluno? aluno;
-    for (final Aluno a in _alunos) {
-      if (a.id == _alunoId) {
-        aluno = a;
-        break;
-      }
-    }
+    final Aluno? aluno = _aluno;
+    final Turma? turma = _turma;
+    final VariacaoDeProva? variacao = _variacao;
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
+    final String? payload = variacao == null
+        ? null
+        : QrPayload(
+            provaId: widget.provaId,
+            variacaoId: variacao.id,
+            alunoId: variacao.alunoId,
+          ).encode();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Individualização')),
@@ -93,31 +169,72 @@ class _IndividualizacaoPageState extends ConsumerState<IndividualizacaoPage> {
                 Card(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                    child: DropdownButtonFormField<String>(
-                      key: const Key('select-aluno-individual'),
-                      initialValue: _alunoId,
-                      decoration: const InputDecoration(
-                        labelText: 'Aluno',
-                        hintText: 'Selecione o aluno',
-                        helperText: 'Aluno para simular a individualização.',
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        filled: false,
-                        prefixIcon: Icon(Icons.person_outline),
-                      ),
-                      items: _alunos
-                          .map(
-                            (Aluno a) => DropdownMenuItem<String>(
-                              value: a.id,
-                              child: Text(a.nome),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: _onAlunoChanged,
+                    child: Column(
+                      children: <Widget>[
+                        DropdownButtonFormField<String>(
+                          key: ValueKey<String>('select-turma-${_turmaId ?? ''}'),
+                          initialValue: _turmaId,
+                          decoration: const InputDecoration(
+                            labelText: 'Turma',
+                            hintText: 'Selecione a turma',
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            filled: false,
+                            prefixIcon: Icon(Icons.groups_outlined),
+                          ),
+                          items: _turmas
+                              .map(
+                                (Turma t) => DropdownMenuItem<String>(
+                                  value: t.id,
+                                  child: Text('${t.nome} · ${t.disciplina}'),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (String? id) => _onTurmaChanged(id),
+                        ),
+                        const Divider(height: 1),
+                        DropdownButtonFormField<String>(
+                          key: ValueKey<String>(
+                            'select-aluno-individual-${_turmaId ?? ''}',
+                          ),
+                          initialValue: _alunoId,
+                          decoration: const InputDecoration(
+                            labelText: 'Aluno',
+                            hintText: 'Selecione o aluno',
+                            helperText: 'Prévia da prova deste aluno.',
+                            border: InputBorder.none,
+                            enabledBorder: InputBorder.none,
+                            focusedBorder: InputBorder.none,
+                            filled: false,
+                            prefixIcon: Icon(Icons.person_outline),
+                          ),
+                          items: _alunos
+                              .map(
+                                (Aluno a) => DropdownMenuItem<String>(
+                                  value: a.id,
+                                  child: Text(a.nome),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (String? id) => _onAlunoChanged(id),
+                        ),
+                      ],
                     ),
                   ),
                 ),
+                if (_turmas.isEmpty || _alunos.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(
+                      _turmas.isEmpty
+                          ? 'Cadastre uma turma com alunos para gerar provas individualizadas.'
+                          : 'Esta turma ainda não tem alunos.',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(color: scheme.onSurfaceVariant),
+                    ),
+                  ),
                 const SectionHeader('Fluxo de geração'),
                 _TimelineStep(
                   icon: Icons.person_outline,
@@ -129,41 +246,92 @@ class _IndividualizacaoPageState extends ConsumerState<IndividualizacaoPage> {
                 _TimelineStep(
                   icon: Icons.shuffle,
                   label: 'Variação da prova',
-                  value: _variacao?.id ?? '—',
-                  caption: _variacao != null
-                      ? '${_variacao!.ordemQuestoes.length} questões embaralhadas'
+                  value: variacao == null
+                      ? '—'
+                      : 'Versão ${variacao.id.length > 8 ? variacao.id.substring(0, 8) : variacao.id}',
+                  caption: variacao != null
+                      ? '${variacao.ordemQuestoes.length} questões e alternativas embaralhadas'
                       : null,
                 ),
                 const _TimelineStep(
                   icon: Icons.description_outlined,
                   label: 'Folha de respostas',
-                  value: 'Prévia individualizada',
+                  value: 'Com nome, matrícula e turma',
                 ),
                 _TimelineStep(
                   icon: Icons.qr_code_2,
                   label: 'QR Code',
-                  value: 'Payload mock',
+                  value: 'Identifica prova, variação e aluno',
                   isLast: true,
-                  trailing: _variacao == null
+                  trailing: payload == null
                       ? null
                       : Padding(
                           padding: const EdgeInsets.only(top: 12),
-                          child: Center(
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: scheme.surfaceContainerLowest,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: scheme.outline),
+                          child: Column(
+                            children: <Widget>[
+                              Center(
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: scheme.outline),
+                                  ),
+                                  child: QrImageView(data: payload, size: 140),
+                                ),
                               ),
-                              child: QrImageView(
-                                data:
-                                    'MOCK|prova=${widget.provaId}|var=${_variacao!.id}|aluno=${_variacao!.alunoId}',
-                                size: 140,
+                              const SizedBox(height: 8),
+                              TextButton.icon(
+                                key: const Key('btn-copiar-codigo-qr'),
+                                onPressed: () async {
+                                  await Clipboard.setData(
+                                    ClipboardData(text: payload),
+                                  );
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text(
+                                          'Código copiado. Use "Digitar código" na tela de correção.',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                },
+                                icon: const Icon(Icons.copy, size: 18),
+                                label: const Text('Copiar código do QR'),
                               ),
-                            ),
+                            ],
                           ),
                         ),
+                ),
+                const SectionHeader('Imprimir'),
+                PdfAcoes(
+                  nomeArquivo:
+                      '${_prova?.titulo ?? 'prova'}_${aluno?.nome ?? 'aluno'}',
+                  rotuloImprimir: 'PDF deste aluno (prova + folha)',
+                  habilitado: _prova != null && variacao != null,
+                  gerar: () => const ProvaPdfService().gerar(
+                    prova: _prova!,
+                    copias: <CopiaProva>[
+                      CopiaProva.individual(
+                        variacao: variacao!,
+                        banco: _banco,
+                        aluno: aluno,
+                        turma: turma,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                PdfAcoes(
+                  nomeArquivo:
+                      '${_prova?.titulo ?? 'prova'}_${turma?.nome ?? 'turma'}',
+                  rotuloImprimir: 'PDF da turma inteira (${_alunos.length} alunos)',
+                  habilitado: _prova != null && _alunos.isNotEmpty,
+                  gerar: () async => const ProvaPdfService().gerar(
+                    prova: _prova!,
+                    copias: await _copiasDaTurma(),
+                  ),
                 ),
               ],
             ),
