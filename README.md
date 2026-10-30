@@ -46,13 +46,13 @@
 
 📌 **N1**
 
-Corrigir provas de múltipla escolha à mão toma muito tempo do professor: conferir folha por folha, somar acertos e passar as notas para o sistema acadêmico. Este app atende o **professor**: ele cadastra turmas e alunos, monta um banco de questões, gera provas com questões e alternativas embaralhadas por aluno, imprime as folhas de resposta com um QR Code individual e corrige apontando a câmera do celular para a folha. A nota sai na hora e fica salva para consulta e estatísticas da turma.
+Corrigir provas de múltipla escolha à mão toma muito tempo do professor: conferir folha por folha, somar acertos e passar as notas para o sistema acadêmico. Este app atende o **professor**: ele cadastra turmas e alunos, monta um banco de questões, gera provas com questões e alternativas embaralhadas por aluno, imprime as folhas de resposta com um QR Code individual e corrige apontando a câmera do celular para a folha. A nota sai na hora e fica salva para consulta.
 
 **Escopo por entrega**
 
 - **N1 — protótipo navegável (entregue):** fluxo completo com dados mock: Login → Turmas/Alunos → Questões → Provas → Variações → Folha/QR → Correção simulada → Resultados.
-- **N2 — sistema funcional (atual):** dados mock substituídos por **Firebase Authentication + Firebase Realtime Database**. Cadastro, listagem, edição e exclusão reais de turmas, alunos, questões e provas; importação de alunos por CSV; variações embaralhadas persistidas; PDF da prova e da folha com QR; leitura do QR pela câmera; correção (respostas A–D informadas após ler o QR), resultados e estatísticas reais.
-- **N3 — planejado:** leitura óptica das marcações da folha (OMR), exportação para Excel, regras de segurança por professor, testes automatizados e layout de impressão validado.
+- **N2 — sistema funcional (atual):** dados mock substituídos por **Firebase Authentication + Firebase Realtime Database**. Cadastro, listagem, edição e exclusão reais de turmas, alunos, questões e provas; importação de alunos por CSV; variações embaralhadas persistidas; PDF da prova e da folha com QR; leitura do QR pela câmera; correção (respostas A–D informadas após ler o QR) e resultados reais, com gráfico de notas da turma.
+- **N3 — planejado:** estatística por questão, leitura óptica das marcações da folha (OMR), exportação para Excel, regras de segurança por professor, testes automatizados e layout de impressão validado.
 
 > **Banco de dados:** a disciplina sugere o Firestore, mas a equipe usou o **Realtime Database** (também do Firebase). Os repositórios do app (`*RtdbRepository`) já estavam modelados como árvore JSON, e o RTDB atende o CRUD de todas as telas. A justificativa está nos diários de bordo.
 
@@ -97,7 +97,7 @@ Corrigir provas de múltipla escolha à mão toma muito tempo do professor: conf
 |---|---|---|
 | RF09 | **Exportação de notas em planilha:** o sistema deve exportar o relatório final de notas em Excel, para facilitar o lançamento no sistema acadêmico. | ⏳ N3 |
 | RF10 | **Detalhamento de respostas por aluno:** o relatório deve indicar não só acerto/erro, mas qual alternativa o aluno marcou em cada questão. | ✅ Implementado (na tela de resultado) |
-| RF11 | **Análise estatística por questão:** o sistema deve mostrar o percentual de acertos/erros e a alternativa mais marcada pela turma em cada questão. | ✅ Implementado |
+| RF11 | **Análise estatística por questão:** o sistema deve mostrar o percentual de acertos/erros e a alternativa mais marcada pela turma em cada questão. | ⏳ N3 (hoje há só o gráfico de notas da turma, sem detalhar por questão) |
 
 **Multiplataforma**
 
@@ -337,7 +337,7 @@ Os dados ficam no **Firebase Realtime Database**, que guarda tudo como uma árvo
 - **`pdf` + `printing`**: geração e impressão do PDF da prova e da folha de respostas.
 - **`qr_flutter`**: desenho do QR Code na tela.
 - **`mobile_scanner`**: leitura do QR Code pela câmera.
-- **`fl_chart`**: gráficos das estatísticas.
+- **`fl_chart`**: gráfico de notas na tela de Resultados.
 - **`uuid`**: geração de identificadores.
 - **`intl` + `flutter_localizations`**: textos em português e formatação de datas e números.
 
@@ -379,7 +379,7 @@ lib/
     provas/               # montagem da prova e variações por aluno
     geracao/              # PDF da prova/folha e QR Code
     correcao/             # leitura do QR e correção
-    resultados/           # notas e estatísticas
+    resultados/           # notas e gráfico da turma
   shared/models/          # entidades (Aluno, Turma, Questao, Prova, Correcao...)
   l10n/                   # textos em português
 assets/fonts/             # Poppins e Montserrat
