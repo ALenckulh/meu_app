@@ -22,9 +22,9 @@
 |---|
 | Ana Paula Lenckulh |
 | Karoliny Daiana Cieply |
-| Letícia Waismann |
-| Mirella Melo |
-| Vítor Uler |
+| Letícia Stefani Waismann |
+| Mirella Melo Silveira |
+| Vitor Daniel Uler |
 
 ## 📑 Sumário
 
@@ -158,8 +158,8 @@ Prints na ordem em que o professor navega. As imagens ficam em [`docs/telas/`](d
 ![Resultado da correção](docs/telas/10-resultado.png)
 *Resultado: nota, acertos e alternativa marcada em cada questão.*
 
-![Estatísticas](docs/telas/11-estatisticas.png)
-*Estatísticas: percentual de acerto e alternativa mais marcada por questão.*
+![Resultados](docs/telas/11-resultados.png)
+*Resultados: notas de todos os alunos corrigidos e gráfico de desempenho da turma.*
 
 ## 4. Modelo de Dados
 
@@ -445,7 +445,7 @@ Backlog real da N2, montado a partir dos commits e Pull Requests do repositório
 | Ajuste dos textos da tela de login | 27/10 | Concluído |
 | Pull Request #4 (login integrado ao banco) revisado e mergeado | 28/10 | Concluído |
 
-### Letícia Waismann
+### Letícia Stefani Waismann
 
 | Tarefa | Prazo | Status |
 |---|---|---|
@@ -453,7 +453,7 @@ Backlog real da N2, montado a partir dos commits e Pull Requests do repositório
 | Geração do PDF da prova e da folha de respostas com QR Code | 28/10 | Concluído |
 | Leitura do QR Code pela câmera (`mobile_scanner`) | 28/10 | Concluído |
 
-### Mirella Melo
+### Mirella Melo Silveira
 
 | Tarefa | Prazo | Status |
 |---|---|---|
@@ -462,7 +462,7 @@ Backlog real da N2, montado a partir dos commits e Pull Requests do repositório
 | Revisão e merge do Pull Request #7 (entrega N2) | 29/10 | Concluído |
 | README v2 no modelo da disciplina | 29/10 | Concluído |
 
-### Vítor Uler
+### Vitor Daniel Uler
 
 | Tarefa | Prazo | Status |
 |---|---|---|
