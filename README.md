@@ -158,9 +158,6 @@ Prints na ordem em que o professor navega. As imagens ficam em [`docs/telas/`](d
 ![Resultado da correção](docs/telas/10-resultado.png)
 *Resultado: nota, acertos e alternativa marcada em cada questão.*
 
-![Resultados](docs/telas/11-resultados.png)
-*Resultados: notas de todos os alunos corrigidos e gráfico de desempenho da turma.*
-
 ## 4. Modelo de Dados
 
 📌 **N3** (adiantado na N2)
