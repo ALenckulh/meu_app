@@ -98,20 +98,43 @@ class ProvaPdfService {
       author: 'App de Correção de Provas',
     );
 
+    int paginasAntes = 0;
     for (final CopiaProva copia in copias) {
       if (incluirProva) {
-        doc.addPage(_paginaProva(prova, copia));
+        // Cada caderno numera as próprias páginas ("Página 1 de 2"), mesmo
+        // no PDF da turma inteira, em que vários cadernos vêm juntos.
+        final int paginas =
+            await _contarPaginas(_paginaProva(prova, copia));
+        doc.addPage(_paginaProva(
+          prova,
+          copia,
+          primeiraPagina: paginasAntes,
+          totalPaginas: paginas,
+        ));
+        paginasAntes += paginas;
       }
       if (incluirFolha) {
         doc.addPage(_paginaFolha(prova, copia));
+        paginasAntes += 1;
       }
     }
     return doc.save();
   }
 
+  static Future<int> _contarPaginas(pw.MultiPage pagina) async {
+    final pw.Document rascunho = pw.Document()..addPage(pagina);
+    await rascunho.save();
+    return rascunho.document.pdfPageList.pages.length;
+  }
+
   // ---------------------------------------------------------------- prova
 
-  pw.MultiPage _paginaProva(Prova prova, CopiaProva copia) {
+  pw.MultiPage _paginaProva(
+    Prova prova,
+    CopiaProva copia, {
+    int primeiraPagina = 0,
+    int? totalPaginas,
+  }) {
     return pw.MultiPage(
       pageFormat: PdfPageFormat.a4,
       margin: const pw.EdgeInsets.fromLTRB(40, 36, 40, 36),
@@ -119,7 +142,8 @@ class ProvaPdfService {
         alignment: pw.Alignment.centerRight,
         margin: const pw.EdgeInsets.only(top: 8),
         child: pw.Text(
-          'Página ${context.pageNumber} de ${context.pagesCount}',
+          'Página ${context.pageNumber - primeiraPagina} de '
+          '${totalPaginas ?? context.pagesCount}',
           style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
         ),
       ),
