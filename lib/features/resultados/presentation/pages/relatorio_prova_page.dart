@@ -269,8 +269,8 @@ class _Conteudo extends ConsumerWidget {
             ),
             StatTile(
               value: '${r.pendentes}',
-              label: 'pendentes',
-              icon: Icons.schedule,
+              label: r.temAusentes ? 'ausentes' : 'pendentes',
+              icon: r.temAusentes ? Icons.person_off_outlined : Icons.schedule,
               accent: colors.tertiary,
             ),
             StatTile(

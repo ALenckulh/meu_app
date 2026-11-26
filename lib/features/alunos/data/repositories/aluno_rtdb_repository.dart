@@ -14,16 +14,11 @@ class AlunoRtdbRepository implements AlunoRepository {
 
   @override
   Future<List<Aluno>> listByTurma(String turmaId) async {
-    final DataSnapshot snap = await _db
-        .ref(RtdbPaths.alunos)
-        .orderByChild('turmaId')
-        .equalTo(turmaId)
-        .get();
-    if (!snap.exists || snap.value == null) {
+    final Map<dynamic, dynamic> map =
+        await filhosComValor(_db.ref(RtdbPaths.alunos), 'turmaId', turmaId);
+    if (map.isEmpty) {
       return <Aluno>[];
     }
-    final Map<dynamic, dynamic> map =
-        snap.value as Map<dynamic, dynamic>;
     return map.entries
         .map(
           (MapEntry<dynamic, dynamic> e) => Aluno.fromMap(

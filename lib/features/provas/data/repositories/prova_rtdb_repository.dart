@@ -30,16 +30,11 @@ class ProvaRtdbRepository implements ProvaRepository {
     if (uid == null) {
       return <Prova>[];
     }
-    final DataSnapshot snap = await _db
-        .ref(RtdbPaths.provas)
-        .orderByChild('professorId')
-        .equalTo(uid)
-        .get();
-    if (!snap.exists || snap.value == null) {
+    final Map<dynamic, dynamic> map =
+        await filhosComValor(_db.ref(RtdbPaths.provas), 'professorId', uid);
+    if (map.isEmpty) {
       return <Prova>[];
     }
-    final Map<dynamic, dynamic> map =
-        snap.value as Map<dynamic, dynamic>;
     return map.entries
         .map(
           (MapEntry<dynamic, dynamic> e) => Prova.fromMap(
@@ -111,16 +106,11 @@ class ProvaRtdbRepository implements ProvaRepository {
 
   @override
   Future<List<VariacaoDeProva>> listVariacoes(String provaId) async {
-    final DataSnapshot snap = await _db
-        .ref(RtdbPaths.variacoes)
-        .orderByChild('provaId')
-        .equalTo(provaId)
-        .get();
-    if (!snap.exists || snap.value == null) {
+    final Map<dynamic, dynamic> map =
+        await filhosComValor(_db.ref(RtdbPaths.variacoes), 'provaId', provaId);
+    if (map.isEmpty) {
       return <VariacaoDeProva>[];
     }
-    final Map<dynamic, dynamic> map =
-        snap.value as Map<dynamic, dynamic>;
     return map.entries
         .map(
           (MapEntry<dynamic, dynamic> e) => VariacaoDeProva.fromMap(

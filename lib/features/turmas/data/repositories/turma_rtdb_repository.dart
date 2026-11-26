@@ -14,16 +14,11 @@ class TurmaRtdbRepository implements TurmaRepository {
 
   @override
   Future<List<Turma>> listByProfessor(String professorId) async {
-    final DataSnapshot snap = await _db
-        .ref(RtdbPaths.turmas)
-        .orderByChild('professorId')
-        .equalTo(professorId)
-        .get();
-    if (!snap.exists || snap.value == null) {
+    final Map<dynamic, dynamic> map =
+        await filhosComValor(_db.ref(RtdbPaths.turmas), 'professorId', professorId);
+    if (map.isEmpty) {
       return <Turma>[];
     }
-    final Map<dynamic, dynamic> map =
-        snap.value as Map<dynamic, dynamic>;
     return map.entries
         .map(
           (MapEntry<dynamic, dynamic> e) => Turma.fromMap(
@@ -63,16 +58,11 @@ class TurmaRtdbRepository implements TurmaRepository {
   @override
   Future<void> delete(String id) async {
     await _db.ref(RtdbPaths.turma(id)).remove();
-    final DataSnapshot alunos = await _db
-        .ref(RtdbPaths.alunos)
-        .orderByChild('turmaId')
-        .equalTo(id)
-        .get();
-    if (!alunos.exists || alunos.value == null) {
+    final Map<dynamic, dynamic> map =
+        await filhosComValor(_db.ref(RtdbPaths.alunos), 'turmaId', id);
+    if (map.isEmpty) {
       return;
     }
-    final Map<dynamic, dynamic> map =
-        alunos.value as Map<dynamic, dynamic>;
     final Map<String, dynamic> updates = <String, dynamic>{};
     for (final dynamic key in map.keys) {
       updates['${RtdbPaths.alunos}/$key'] = null;

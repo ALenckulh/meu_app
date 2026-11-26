@@ -25,16 +25,11 @@ class QuestaoRtdbRepository implements QuestaoRepository {
     if (uid == null) {
       return <Questao>[];
     }
-    final DataSnapshot snap = await _db
-        .ref(RtdbPaths.questoes)
-        .orderByChild('professorId')
-        .equalTo(uid)
-        .get();
-    if (!snap.exists || snap.value == null) {
+    final Map<dynamic, dynamic> map =
+        await filhosComValor(_db.ref(RtdbPaths.questoes), 'professorId', uid);
+    if (map.isEmpty) {
       return <Questao>[];
     }
-    final Map<dynamic, dynamic> map =
-        snap.value as Map<dynamic, dynamic>;
     List<Questao> list = map.entries
         .map(
           (MapEntry<dynamic, dynamic> e) => Questao.fromMap(

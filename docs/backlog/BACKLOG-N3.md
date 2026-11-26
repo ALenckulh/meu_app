@@ -64,6 +64,7 @@ O documento da avaliação define 9 funcionalidades, demonstradas nesta ordem. A
 
 ### Antes do dia da apresentação
 
+- [ ] Publicar as regras do banco (`firebase deploy --only database`, ou colar `database.rules.json` em *Realtime Database › Regras* no console). Sem os índices o app continua funcionando (lê o nó inteiro e filtra no aparelho), mas fica mais lento e o console mostra o aviso *Index not defined*.
 - [ ] Ter questões já cadastradas no banco (o roteiro cadastra só uma na hora).
 - [ ] Criar a prova que será corrigida ao vivo, com turma e alunos.
 - [ ] Imprimir com a versão atual do app: a folha precisa ter os 4 quadrados pretos nos cantos da grade e o quadrado menor ao lado do de cima à esquerda. Folha antiga não é lida pela foto.

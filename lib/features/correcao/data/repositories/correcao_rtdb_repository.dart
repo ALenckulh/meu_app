@@ -28,16 +28,11 @@ class CorrecaoRtdbRepository implements CorrecaoRepository {
     if (uid == null) {
       return <Correcao>[];
     }
-    final DataSnapshot snap = await _db
-        .ref(RtdbPaths.correcoes)
-        .orderByChild('professorId')
-        .equalTo(uid)
-        .get();
-    if (!snap.exists || snap.value == null) {
+    final Map<dynamic, dynamic> map =
+        await filhosComValor(_db.ref(RtdbPaths.correcoes), 'professorId', uid);
+    if (map.isEmpty) {
       return <Correcao>[];
     }
-    final Map<dynamic, dynamic> map =
-        snap.value as Map<dynamic, dynamic>;
     return map.entries
         .map(
           (MapEntry<dynamic, dynamic> e) => Correcao.fromMap(
