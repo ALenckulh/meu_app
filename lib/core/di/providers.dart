@@ -47,6 +47,7 @@ class AuthSessionNotifier extends Notifier<Professor?> {
     final Professor? user =
         await ref.read(authRepositoryProvider).login(email, senha);
     state = user;
+    _limparCacheDasListas();
     return user != null;
   }
 
@@ -60,11 +61,19 @@ class AuthSessionNotifier extends Notifier<Professor?> {
           email: email,
           senha: senha,
         );
+    _limparCacheDasListas();
   }
 
   Future<void> logout() async {
     await ref.read(authRepositoryProvider).logout();
     state = null;
+    _limparCacheDasListas();
+  }
+
+  /// Ao trocar de conta, as listas (turmas, provas, questões, resultados)
+  /// guardadas em memória são da conta anterior: força recarregar.
+  void _limparCacheDasListas() {
+    ref.read(listVersionProvider.notifier).bump();
   }
 }
 
