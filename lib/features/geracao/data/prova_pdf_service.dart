@@ -103,14 +103,15 @@ class ProvaPdfService {
       if (incluirProva) {
         // Cada caderno numera as próprias páginas ("Página 1 de 2"), mesmo
         // no PDF da turma inteira, em que vários cadernos vêm juntos.
-        final int paginas =
-            await _contarPaginas(_paginaProva(prova, copia));
-        doc.addPage(_paginaProva(
-          prova,
-          copia,
-          primeiraPagina: paginasAntes,
-          totalPaginas: paginas,
-        ));
+        final int paginas = await _contarPaginas(_paginaProva(prova, copia));
+        doc.addPage(
+          _paginaProva(
+            prova,
+            copia,
+            primeiraPagina: paginasAntes,
+            totalPaginas: paginas,
+          ),
+        );
         paginasAntes += paginas;
       }
       if (incluirFolha) {
@@ -159,27 +160,30 @@ class ProvaPdfService {
 
   pw.Widget _blocoQuestao(int indice, Questao questao, CopiaProva copia) {
     final List<int> perm = copia.permutacao(questao);
-    return pw.Container(
-      margin: const pw.EdgeInsets.only(bottom: 14),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: <pw.Widget>[
-          pw.Text(
-            '${indice + 1}. ${_t(questao.enunciado)}',
-            style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
-          ),
-          pw.SizedBox(height: 6),
-          ...List<pw.Widget>.generate(perm.length, (int j) {
-            final String letra = j < letras.length ? letras[j] : '${j + 1}';
-            return pw.Padding(
-              padding: const pw.EdgeInsets.only(left: 14, bottom: 3),
-              child: pw.Text(
-                '($letra) ${_t(questao.alternativas[perm[j]])}',
-                style: const pw.TextStyle(fontSize: 10.5),
-              ),
-            );
-          }),
-        ],
+    // Inseparable: o enunciado e as alternativas ficam na mesma página.
+    return pw.Inseparable(
+      child: pw.Container(
+        margin: const pw.EdgeInsets.only(bottom: 14),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: <pw.Widget>[
+            pw.Text(
+              '${indice + 1}. ${_t(questao.enunciado)}',
+              style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 6),
+            ...List<pw.Widget>.generate(perm.length, (int j) {
+              final String letra = j < letras.length ? letras[j] : '${j + 1}';
+              return pw.Padding(
+                padding: const pw.EdgeInsets.only(left: 14, bottom: 3),
+                child: pw.Text(
+                  '($letra) ${_t(questao.alternativas[perm[j]])}',
+                  style: const pw.TextStyle(fontSize: 10.5),
+                ),
+              );
+            }),
+          ],
+        ),
       ),
     );
   }
@@ -225,26 +229,26 @@ class ProvaPdfService {
     const double r = LayoutFolha.raioBolha;
 
     pw.Widget quadrado(double cx, double cy, double lado) => pw.Positioned(
-          left: cx - lado / 2,
-          top: cy - lado / 2,
-          child: pw.Container(
-            width: lado,
-            height: lado,
-            color: PdfColors.black,
-          ),
-        );
+      left: cx - lado / 2,
+      top: cy - lado / 2,
+      child: pw.Container(width: lado, height: lado, color: PdfColors.black),
+    );
 
-    pw.Widget centrado(double cx, double cy, double w, double h,
-            pw.Widget child) =>
-        pw.Positioned(
-          left: cx - w / 2,
-          top: cy - h / 2,
-          child: pw.SizedBox(
-            width: w,
-            height: h,
-            child: pw.Center(child: child),
-          ),
-        );
+    pw.Widget centrado(
+      double cx,
+      double cy,
+      double w,
+      double h,
+      pw.Widget child,
+    ) => pw.Positioned(
+      left: cx - w / 2,
+      top: cy - h / 2,
+      child: pw.SizedBox(
+        width: w,
+        height: h,
+        child: pw.Center(child: child),
+      ),
+    );
 
     return pw.SizedBox(
       width: LayoutFolha.largura,
@@ -347,16 +351,14 @@ class ProvaPdfService {
           children: <pw.Widget>[
             pw.Expanded(child: _campo('Matrícula', aluno?.matricula)),
             pw.SizedBox(width: 12),
-            pw.Expanded(
-              child: _campo(
-                'Turma',
-                turma == null ? null : '${turma.nome} · ${turma.disciplina}',
-              ),
-            ),
+            pw.Expanded(child: _campo('Data', null)),
           ],
         ),
         pw.SizedBox(height: 6),
-        _campo('Data', null),
+        _campo(
+          'Turma',
+          turma == null ? null : '${turma.nome} · ${turma.disciplina}',
+        ),
       ],
     );
 
