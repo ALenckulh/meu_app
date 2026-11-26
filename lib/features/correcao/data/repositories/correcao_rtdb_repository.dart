@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:meu_app/core/data/rtdb.dart';
 import 'package:meu_app/core/data/rtdb_paths.dart';
+import 'package:meu_app/features/correcao/domain/calculo_nota.dart';
 import 'package:meu_app/features/correcao/domain/repositories/correcao_repository.dart';
 import 'package:meu_app/shared/models/correcao.dart';
 import 'package:meu_app/shared/models/questao.dart';
@@ -91,47 +92,40 @@ class CorrecaoRtdbRepository implements CorrecaoRepository {
     if (variacao == null) {
       throw StateError('Variação não encontrada: $variacaoId');
     }
-    if (respostas.length != variacao.ordemQuestoes.length) {
-      throw ArgumentError(
-        'Respostas (${respostas.length}) ≠ questões '
-        '(${variacao.ordemQuestoes.length}).',
-      );
-    }
-
     // Gabarito vem da questão atual (não do snapshot da variação), para que
     // corrigir o gabarito de uma questão valha para as próximas correções.
-    final List<int> gabarito = <int>[];
-    int acertos = 0;
-    for (int i = 0; i < variacao.ordemQuestoes.length; i++) {
-      final String questaoId = variacao.ordemQuestoes[i];
-      final int marcada = respostas[i];
-      if (marcada < 0 || marcada > 3) {
-        throw ArgumentError('Resposta inválida na posição $i: $marcada');
-      }
-      final int correta = await _gabaritoAtual(variacao, questaoId);
-      gabarito.add(correta);
-      if (marcada == correta) {
-        acertos++;
-      }
-    }
+    final List<int> gabarito = <int>[
+      for (final String questaoId in variacao.ordemQuestoes)
+        await _gabaritoAtual(variacao, questaoId),
+    ];
+    final ResultadoNota resultado = calcularNota(respostas, gabarito);
 
-    final int total = variacao.ordemQuestoes.length;
-    final double nota = total == 0 ? 0 : (acertos / total) * 10;
-
-    final Correcao? existing = await getByVariacao(variacaoId);
-    final String id = existing?.id ?? _uuid.v4();
+    // Uma nota por aluno em cada prova: corrigir de novo (mesmo por outra
+    // folha da prova) substitui a anterior.
+    final List<Correcao> anteriores = (await listAll())
+        .where((Correcao c) =>
+            c.alunoId == alunoId &&
+            (c.variacaoId == variacaoId || c.provaId == variacao.provaId))
+        .toList();
+    final String id = anteriores.isNotEmpty ? anteriores.first.id : _uuid.v4();
     final Correcao correcao = Correcao(
       id: id,
       professorId: professorId,
       variacaoId: variacaoId,
       alunoId: alunoId,
+      provaId: variacao.provaId,
       respostas: List<int>.from(respostas),
-      nota: double.parse(nota.toStringAsFixed(1)),
-      acertos: acertos,
-      totalQuestoes: total,
+      nota: resultado.nota,
+      acertos: resultado.acertos,
+      totalQuestoes: resultado.total,
       gabarito: gabarito,
+      corrigidaEm: DateTime.now(),
     );
-    await _db.ref(RtdbPaths.correcao(id)).set(correcao.toMap());
+    final Map<String, dynamic> updates = <String, dynamic>{
+      RtdbPaths.correcao(id): correcao.toMap(),
+      for (final Correcao c in anteriores.skip(1)) RtdbPaths.correcao(c.id): null,
+    };
+    await _db.ref().update(updates);
     return correcao;
   }
 

@@ -22,6 +22,8 @@ class _ProvaFormPageState extends ConsumerState<ProvaFormPage> {
   List<Questao> _banco = <Questao>[];
   List<Turma> _turmas = <Turma>[];
   String? _turmaId;
+  bool _embaralharQuestoes = true;
+  bool _embaralharAlternativas = true;
   bool _loading = true;
   String? _error;
 
@@ -101,7 +103,12 @@ class _ProvaFormPageState extends ConsumerState<ProvaFormPage> {
             professorId: professorId,
             turmaId: _turmaId!,
             titulo: _tituloController.text.trim(),
-            questaoIds: _selecionadas.toList(),
+            questaoIds: _banco
+                .where((Questao q) => _selecionadas.contains(q.id))
+                .map((Questao q) => q.id)
+                .toList(),
+            embaralharQuestoes: _embaralharQuestoes,
+            embaralharAlternativas: _embaralharAlternativas,
           ),
         );
     ref.read(listVersionProvider.notifier).bump();
@@ -187,8 +194,40 @@ class _ProvaFormPageState extends ConsumerState<ProvaFormPage> {
                             ),
                           ),
                         ),
+                        const SectionHeader('Embaralhamento'),
+                        Card(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                            child: Column(
+                              children: <Widget>[
+                                SwitchListTile(
+                                  key: const Key(
+                                      'switch-criar-embaralhar-questoes'),
+                                  contentPadding: EdgeInsets.zero,
+                                  title: const Text('Embaralhar questões'),
+                                  subtitle: const Text(
+                                      'Cada aluno recebe as questões em outra ordem'),
+                                  value: _embaralharQuestoes,
+                                  onChanged: (bool v) =>
+                                      setState(() => _embaralharQuestoes = v),
+                                ),
+                                SwitchListTile(
+                                  key: const Key(
+                                      'switch-criar-embaralhar-alternativas'),
+                                  contentPadding: EdgeInsets.zero,
+                                  title: const Text('Embaralhar alternativas'),
+                                  subtitle: const Text(
+                                      'A, B, C e D trocam de posição em cada folha'),
+                                  value: _embaralharAlternativas,
+                                  onChanged: (bool v) => setState(
+                                      () => _embaralharAlternativas = v),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                         SectionHeader(
-                          'Questões',
+                          'Questões do banco',
                           action: Text(
                             '${_selecionadas.length} selecionada(s)',
                             style: theme.textTheme.labelMedium?.copyWith(

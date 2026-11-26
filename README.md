@@ -52,17 +52,22 @@ Corrigir provas de múltipla escolha à mão toma muito tempo do professor: conf
 
 - **N1 — protótipo navegável (entregue):** fluxo completo com dados mock: Login → Turmas/Alunos → Questões → Provas → Variações → Folha/QR → Correção simulada → Resultados.
 - **N2 — sistema funcional (atual):** dados mock substituídos por **Firebase Authentication + Firebase Realtime Database**. Cadastro, listagem, edição e exclusão reais de turmas, alunos, questões e provas; importação de alunos por CSV; variações embaralhadas persistidas; PDF da prova e da folha com QR; leitura do QR pela câmera; correção (respostas A–D informadas após ler o QR) e resultados reais, com gráfico de notas da turma.
-- **N3 — planejado:** estatística por questão, leitura óptica das marcações da folha (OMR), exportação para Excel, regras de segurança por professor, testes automatizados e layout de impressão validado.
+- **N3 — em andamento:** já entregues o embaralhamento configurado na criação da prova, a edição do título e a prévia das questões no detalhe da prova, a correção também pela **folha geral** (o app pede o aluno), o aviso de nota salva, o **Status da prova (relatório)** com pendentes, médias e estatística por questão, a **leitura óptica das marcações (OMR)** por foto da folha, e testes automatizados da nota, do relatório, da leitura óptica e do fluxo de correção. Faltam a exportação para Excel e .doc, as regras de segurança por professor e o teste da leitura com folhas impressas de verdade (ver [`docs/backlog/BACKLOG-N3.md`](docs/backlog/BACKLOG-N3.md)).
 
 > **Banco de dados:** a disciplina sugere o Firestore, mas a equipe usou o **Realtime Database** (também do Firebase). Os repositórios do app (`*RtdbRepository`) já estavam modelados como árvore JSON, e o RTDB atende o CRUD de todas as telas. A justificativa está nos diários de bordo.
 
-**Fluxo principal:** Turma + alunos → banco de questões → prova (questões + turma) → variações por aluno → imprimir PDF com QR → **Corrigir** (lê o QR e recebe as respostas) → **Resultados**.
+**Fluxo principal:** Turma + alunos → banco de questões → prova (questões + turma + embaralhamento) → variações por aluno → imprimir PDF com QR → **Corrigir** (lê o QR, fotografa a folha e a leitura óptica preenche as respostas) → **Resultado** (nota salva) → **Status da prova**.
 
 **Regras importantes**
 
-- Cada folha (aluno + prova) tem uma única correção; corrigir de novo substitui a nota.
+- Cada aluno tem uma única nota por prova; corrigir de novo (pela mesma folha ou por outra da prova) substitui a nota.
+- A folha **individual** traz no QR a prova, a variação e o aluno. A folha **geral** traz só a prova: na correção o app pede o aluno e corrige na ordem original das questões.
+- O embaralhamento de questões e de alternativas é escolhido ao criar a prova e pode ser trocado no detalhe; vale para as folhas geradas depois.
+- A prova fica **Aguardando correção**, **Em correção** ou com **Correções finalizadas** (todos os alunos da turma com nota, ou o professor tocou em *Encerrar correção*; quem ficou sem nota aparece como ausente).
 - Gerar de novo a variação de um aluno, ou mudar as questões ou a turma da prova, invalida as folhas já impressas (o app pede confirmação).
 - A correção usa o gabarito atual da questão e o salva junto com a nota.
+- A leitura óptica acha os 4 quadrados pretos dos cantos da grade e o quadrado menor de orientação (por isso a foto pode estar girada ou de cabeça para baixo). Questão em branco ou com duas marcações fica em destaque para o professor conferir; sem alternativa, conta como erro. Foto tremida ou com um canto cortado é recusada, em vez de arriscar uma nota errada.
+- Folhas impressas antes da versão com leitura óptica não têm os quadrados pretos: reimprima para ler pela foto (ou marque as respostas à mão).
 - Questão usada em alguma prova não pode ser excluída.
 
 📹 [Vídeo demonstrativo do sistema](https://www.youtube.com/watch?v=Y0RQv2h-qpc)
@@ -87,7 +92,7 @@ Corrigir provas de múltipla escolha à mão toma muito tempo do professor: conf
 | Código | Requisito | Status N2 |
 |---|---|---|
 | RF05 | **Folha de respostas com QR Code:** o sistema deve gerar a folha de respostas com um QR Code que vincula a folha à prova e ao aluno. | ✅ Implementado |
-| RF06 | **Leitura e correção pela câmera:** o sistema deve usar a câmera do celular para escanear o QR Code e as marcações da folha de resposta. | 🟡 Parcial (lê o QR; marcações são informadas à mão — OMR na N3) |
+| RF06 | **Leitura e correção pela câmera:** o sistema deve usar a câmera do celular para escanear o QR Code e as marcações da folha de resposta. | ✅ Implementado (N3: QR pela câmera e marcações por foto da folha, com conferência) |
 | RF07 | **Nota automática e feedback imediato:** o sistema deve calcular a nota automaticamente e mostrar o resultado na hora. | ✅ Implementado |
 | RF08 | **Importação de lista de alunos:** o sistema deve permitir importar listas de alunos para as turmas. | ✅ Implementado (CSV) |
 
@@ -97,7 +102,7 @@ Corrigir provas de múltipla escolha à mão toma muito tempo do professor: conf
 |---|---|---|
 | RF09 | **Exportação de notas em planilha:** o sistema deve exportar o relatório final de notas em Excel, para facilitar o lançamento no sistema acadêmico. | ⏳ N3 |
 | RF10 | **Detalhamento de respostas por aluno:** o relatório deve indicar não só acerto/erro, mas qual alternativa o aluno marcou em cada questão. | ✅ Implementado (na tela de resultado) |
-| RF11 | **Análise estatística por questão:** o sistema deve mostrar o percentual de acertos/erros e a alternativa mais marcada pela turma em cada questão. | ⏳ N3 (hoje há só o gráfico de notas da turma, sem detalhar por questão) |
+| RF11 | **Análise estatística por questão:** o sistema deve mostrar o percentual de acertos/erros e a alternativa mais marcada pela turma em cada questão. | ✅ Implementado (N3, no Status da prova) |
 
 **Multiplataforma**
 
@@ -253,7 +258,9 @@ Os dados ficam no **Firebase Realtime Database**, que guarda tudo como uma árvo
     "turmaId": "turma-1",
     "titulo": "Prova Diagnóstica 1",
     "questaoIds": ["q1", "q2", "q3", "q6"],
-    "quantidadeVariacoes": 2
+    "quantidadeVariacoes": 2,
+    "embaralharQuestoes": true,
+    "embaralharAlternativas": true
   }
 }
 ```
@@ -266,6 +273,8 @@ Os dados ficam no **Firebase Realtime Database**, que guarda tudo como uma árvo
 | titulo | String | Título da prova |
 | questaoIds | List\<String\> | Questões da prova, na ordem original |
 | quantidadeVariacoes | int | Quantidade de variações a gerar |
+| embaralharQuestoes | bool | Embaralhar a ordem das questões nas folhas (N3) |
+| embaralharAlternativas | bool | Embaralhar a ordem das alternativas nas folhas (N3) |
 
 ### `variacoes_de_prova`
 
@@ -297,27 +306,31 @@ Os dados ficam no **Firebase Realtime Database**, que guarda tudo como uma árvo
   "corr-1": {
     "professorId": "3JvuX2G7QzTn0dGDJtJHn1CwuY92",
     "variacaoId": "var-1",
+    "provaId": "prova-1",
     "alunoId": "aluno-1",
     "respostas": [0, 1, 2, 0],
     "gabarito": [0, 1, 2, 1],
     "nota": 7.5,
     "acertos": 3,
-    "totalQuestoes": 4
+    "totalQuestoes": 4,
+    "corrigidaEm": 1795963800000
   }
 }
 ```
 
 | Campo | Tipo | Descrição |
 |---|---|---|
-| (chave) | String | Identificador da correção (uma por folha) |
+| (chave) | String | Identificador da correção (uma por aluno em cada prova) |
 | professorId | String | Professor que corrigiu (filtro dos Resultados) |
 | variacaoId | String | Variação corrigida |
+| provaId | String | Prova corrigida, usada no Status da prova (N3) |
 | alunoId | String | Aluno corrigido |
-| respostas | List\<int\> | Alternativa marcada (0–3) em cada posição |
+| respostas | List\<int\> | Alternativa marcada (0–3) em cada posição; -1 = em branco ou duas marcações (conta como erro) |
 | gabarito | List\<int\> | Gabarito congelado no momento da correção |
 | nota | double | Nota de 0 a 10 |
 | acertos | int | Quantidade de acertos |
 | totalQuestoes | int | Total de questões |
+| corrigidaEm | int | Data e hora em que a nota foi salva, em milissegundos (N3) |
 
 ## 5. Stack Tecnológica
 

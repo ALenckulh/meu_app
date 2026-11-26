@@ -20,4 +20,12 @@ abstract class ProvaRepository {
     required bool embaralharQuestoes,
     required bool embaralharAlternativas,
   });
+
+  /// Variação na ordem original (sem embaralhar) para corrigir um aluno pela
+  /// folha geral. Reaproveita a do aluno se ela já estiver na ordem original;
+  /// senão gera uma nova, que substitui a folha individual dele.
+  Future<VariacaoDeProva> variacaoFolhaGeral({
+    required String provaId,
+    required String alunoId,
+  });
 }

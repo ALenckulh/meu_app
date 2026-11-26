@@ -55,6 +55,8 @@ class _ProvaVariacoesPageState extends ConsumerState<ProvaVariacoesPage> {
     if (mounted) {
       setState(() {
         _prova = prova;
+        _embaralharQuestoes = prova?.embaralharQuestoes ?? true;
+        _embaralharAlternativas = prova?.embaralharAlternativas ?? true;
         _turma = turma;
         _alunos = alunos;
         _selecionados
@@ -123,9 +125,14 @@ class _ProvaVariacoesPageState extends ConsumerState<ProvaVariacoesPage> {
     }
     setState(() => _gerando = true);
     try {
-      await ref.read(provaRepositoryProvider).update(
-            _prova!.copyWith(quantidadeVariacoes: ids.length),
-          );
+      // Guarda a configuração na prova: as próximas folhas (individuais ou
+      // da turma) seguem o mesmo embaralhamento.
+      _prova = _prova!.copyWith(
+        quantidadeVariacoes: ids.length,
+        embaralharQuestoes: _embaralharQuestoes,
+        embaralharAlternativas: _embaralharAlternativas,
+      );
+      await ref.read(provaRepositoryProvider).update(_prova!);
       final List<VariacaoDeProva> geradas = <VariacaoDeProva>[];
       for (final String alunoId in ids) {
         final VariacaoDeProva v =
@@ -362,7 +369,8 @@ class _ProvaVariacoesPageState extends ConsumerState<ProvaVariacoesPage> {
                               ),
                             ),
                             subtitle: Text(
-                              '${_geradas[i].ordemQuestoes.length} questões embaralhadas',
+                              '${_geradas[i].ordemQuestoes.length} questões'
+                              '${_embaralharQuestoes || _embaralharAlternativas ? ' embaralhadas' : ' na ordem original'}',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: colors.onPrimaryContainer
                                     .withValues(alpha: 0.85),

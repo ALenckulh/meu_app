@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:meu_app/core/di/providers.dart';
 import 'package:meu_app/core/theme/app_gradients.dart';
 import 'package:meu_app/core/theme/app_semantic_colors.dart';
@@ -30,10 +31,10 @@ class CorrecaoResultadoPage extends ConsumerWidget {
           variacao = await ref
               .read(provaRepositoryProvider)
               .getVariacaoById(correcao.variacaoId);
-          if (variacao != null) {
-            prova = await ref
-                .read(provaRepositoryProvider)
-                .getById(variacao.provaId);
+          final String provaId =
+              variacao?.provaId ?? correcao.provaId;
+          if (provaId.isNotEmpty) {
+            prova = await ref.read(provaRepositoryProvider).getById(provaId);
           }
         }
         return (
@@ -72,11 +73,46 @@ class CorrecaoResultadoPage extends ConsumerWidget {
             ? 0
             : ((correcao.acertos / correcao.totalQuestoes) * 100).round();
 
+        final DateTime? quando = correcao.corrigidaEm;
+        // Aberta logo depois de corrigir (fluxo da câmera)?
+        final bool daCorrecao = GoRouterState.of(context)
+            .matchedLocation
+            .startsWith('/mais/correcao');
+
         return Scaffold(
           appBar: AppBar(title: const Text('Resultado da correção')),
           body: ListView(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
             children: <Widget>[
+              Container(
+                key: const Key('aviso-nota-salva'),
+                margin: const EdgeInsets.only(bottom: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                decoration: BoxDecoration(
+                  color: context.semantic.successContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: <Widget>[
+                    Icon(Icons.cloud_done_outlined,
+                        color: context.semantic.onSuccessContainer),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        quando == null
+                            ? 'Nota salva no banco de dados.'
+                            : 'Nota salva no banco de dados em '
+                                '${_dataHora(quando)}.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: context.semantic.onSuccessContainer,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
@@ -167,6 +203,24 @@ class CorrecaoResultadoPage extends ConsumerWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+              if (daCorrecao)
+                FilledButton.icon(
+                  key: const Key('btn-proxima-folha'),
+                  onPressed: () => context.pop(),
+                  icon: const Icon(Icons.qr_code_scanner),
+                  label: const Text('Corrigir próxima folha'),
+                ),
+              if (prova != null) ...<Widget>[
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  key: const Key('btn-ver-status-prova'),
+                  onPressed: () =>
+                      context.push('/provas/${prova.id}/relatorio'),
+                  icon: const Icon(Icons.assessment_outlined),
+                  label: const Text('Ver status da prova'),
+                ),
+              ],
               const SectionHeader('Respostas identificadas'),
               ...List<Widget>.generate(correcao.respostas.length, (int i) {
                 final int marcada = correcao.respostas[i];
@@ -175,7 +229,9 @@ class CorrecaoResultadoPage extends ConsumerWidget {
                 return _RespostaRow(
                   numero: i + 1,
                   ok: ok,
-                  marcada: labels[marcada],
+                  marcada: marcada >= 0 && marcada < labels.length
+                      ? labels[marcada]
+                      : 'em branco',
                   gabarito: gabarito != null ? labels[gabarito] : null,
                 );
               }),
@@ -185,6 +241,12 @@ class CorrecaoResultadoPage extends ConsumerWidget {
       },
     );
   }
+}
+
+String _dataHora(DateTime d) {
+  String dois(int n) => n.toString().padLeft(2, '0');
+  return '${dois(d.day)}/${dois(d.month)}/${d.year} às '
+      '${dois(d.hour)}:${dois(d.minute)}';
 }
 
 /// Gabarito salvo na correção; correções antigas caem no da variação.

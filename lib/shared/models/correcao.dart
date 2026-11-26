@@ -9,6 +9,8 @@ class Correcao {
     required this.acertos,
     required this.totalQuestoes,
     this.gabarito = const <int>[],
+    this.provaId = '',
+    this.corrigidaEm,
   });
 
   final String id;
@@ -16,7 +18,12 @@ class Correcao {
   final String variacaoId;
   final String alunoId;
 
-  /// Alternativa marcada (0–3) por índice da questão na variação.
+  /// Resposta de questão em branco ou com mais de uma marcação (conta como
+  /// erro).
+  static const int emBranco = -1;
+
+  /// Alternativa marcada (0–3) por índice da questão na variação, ou
+  /// [emBranco].
   final List<int> respostas;
   final double nota;
   final int acertos;
@@ -25,6 +32,12 @@ class Correcao {
   /// Alternativa correta (0–3) por posição, congelada no momento da correção.
   /// Vazio em correções antigas — nesse caso use a variação.
   final List<int> gabarito;
+
+  /// Prova corrigida. Vazio em correções antigas — nesse caso use a variação.
+  final String provaId;
+
+  /// Quando a nota foi salva (null em correções antigas).
+  final DateTime? corrigidaEm;
 
   factory Correcao.fromMap(String id, Map<dynamic, dynamic> map) {
     final List<dynamic> rawResp =
@@ -41,6 +54,12 @@ class Correcao {
       acertos: (map['acertos'] as num?)?.toInt() ?? 0,
       totalQuestoes: (map['totalQuestoes'] as num?)?.toInt() ?? 0,
       gabarito: rawGab.map((dynamic e) => (e as num).toInt()).toList(),
+      provaId: map['provaId'] as String? ?? '',
+      corrigidaEm: map['corrigidaEm'] is num
+          ? DateTime.fromMillisecondsSinceEpoch(
+              (map['corrigidaEm'] as num).toInt(),
+            )
+          : null,
     );
   }
 
@@ -54,6 +73,9 @@ class Correcao {
       'acertos': acertos,
       'totalQuestoes': totalQuestoes,
       'gabarito': gabarito,
+      'provaId': provaId,
+      if (corrigidaEm != null)
+        'corrigidaEm': corrigidaEm!.millisecondsSinceEpoch,
     };
   }
 }

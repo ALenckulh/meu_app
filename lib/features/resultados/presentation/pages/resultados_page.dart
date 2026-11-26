@@ -46,7 +46,9 @@ class _ResultadosPageState extends ConsumerState<ResultadosPage> {
     final List<Correcao> correcoes =
         await ref.read(correcaoRepositoryProvider).listAll();
     final Map<String, Prova> provaPorVariacao = <String, Prova>{};
+    final Map<String, Prova> provaPorId = <String, Prova>{};
     for (final Prova p in await ref.read(provaRepositoryProvider).listAll()) {
+      provaPorId[p.id] = p;
       for (final VariacaoDeProva v
           in await ref.read(provaRepositoryProvider).listVariacoes(p.id)) {
         provaPorVariacao[v.id] = p;
@@ -60,7 +62,7 @@ class _ResultadosPageState extends ConsumerState<ResultadosPage> {
         rows.add(_ResultadoRow(
           correcao: c,
           aluno: aluno,
-          prova: provaPorVariacao[c.variacaoId],
+          prova: provaPorVariacao[c.variacaoId] ?? provaPorId[c.provaId],
         ));
       }
     }
@@ -135,8 +137,8 @@ class _ResultadosPageState extends ConsumerState<ResultadosPage> {
           await ref.read(provaRepositoryProvider).gerarVariacao(
                 provaId: escolhido.prova.id,
                 alunoId: aluno.id,
-                embaralharQuestoes: true,
-                embaralharAlternativas: true,
+                embaralharQuestoes: escolhido.prova.embaralharQuestoes,
+                embaralharAlternativas: escolhido.prova.embaralharAlternativas,
               );
 
       final List<int> respostas = List<int>.generate(
@@ -279,6 +281,27 @@ class _ResultadosPageState extends ConsumerState<ResultadosPage> {
                         ],
                       ),
                     ),
+                    const SectionHeader('Status por prova'),
+                    ..._provasCorrigidas(rows).map(
+                      (Prova p) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Card(
+                          child: ListTile(
+                            key: Key('resultados-prova-${p.id}'),
+                            leading: Icon(Icons.assessment_outlined,
+                                color: colors.primary),
+                            title: Text(p.titulo),
+                            subtitle: Text(
+                              '${rows.where((_ResultadoRow r) => r.prova?.id == p.id).length}'
+                              ' correção(ões) · ver status e pendentes',
+                            ),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () =>
+                                context.push('/provas/${p.id}/relatorio'),
+                          ),
+                        ),
+                      ),
+                    ),
                     const SectionHeader('Desempenho'),
                     Card(
                       child: Padding(
@@ -414,6 +437,17 @@ class _ResultadosPageState extends ConsumerState<ResultadosPage> {
       },
     );
   }
+}
+
+/// Provas que aparecem nas correções, sem repetir, por título.
+List<Prova> _provasCorrigidas(List<_ResultadoRow> rows) {
+  final Map<String, Prova> porId = <String, Prova>{
+    for (final _ResultadoRow r in rows)
+      if (r.prova != null) r.prova!.id: r.prova!,
+  };
+  return porId.values.toList()
+    ..sort((Prova a, Prova b) =>
+        a.titulo.toLowerCase().compareTo(b.titulo.toLowerCase()));
 }
 
 class _ScoreBadge extends StatelessWidget {

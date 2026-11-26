@@ -102,8 +102,8 @@ class _IndividualizacaoPageState extends ConsumerState<IndividualizacaoPage> {
     return ref.read(provaRepositoryProvider).gerarVariacao(
           provaId: widget.provaId,
           alunoId: alunoId,
-          embaralharQuestoes: true,
-          embaralharAlternativas: true,
+          embaralharQuestoes: _prova?.embaralharQuestoes ?? true,
+          embaralharAlternativas: _prova?.embaralharAlternativas ?? true,
         );
   }
 
@@ -230,7 +230,8 @@ class _IndividualizacaoPageState extends ConsumerState<IndividualizacaoPage> {
                       ? '—'
                       : 'Versão ${variacao.id.length > 8 ? variacao.id.substring(0, 8) : variacao.id}',
                   caption: variacao != null
-                      ? '${variacao.ordemQuestoes.length} questões embaralhadas'
+                      ? '${variacao.ordemQuestoes.length} questões · '
+                          '${_descricaoEmbaralhamento(_prova)}'
                       : null,
                 ),
                 _TimelineStep(
@@ -312,6 +313,21 @@ class _IndividualizacaoPageState extends ConsumerState<IndividualizacaoPage> {
             ),
     );
   }
+}
+
+String _descricaoEmbaralhamento(Prova? prova) {
+  final bool q = prova?.embaralharQuestoes ?? true;
+  final bool a = prova?.embaralharAlternativas ?? true;
+  if (q && a) {
+    return 'questões e alternativas embaralhadas';
+  }
+  if (q) {
+    return 'questões embaralhadas';
+  }
+  if (a) {
+    return 'alternativas embaralhadas';
+  }
+  return 'ordem original';
 }
 
 class _TimelineStep extends StatelessWidget {

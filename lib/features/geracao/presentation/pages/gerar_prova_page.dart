@@ -129,7 +129,8 @@ class _GerarProvaPageState extends ConsumerState<GerarProvaPage> {
                       children: <Widget>[
                         Expanded(
                           child: Text(
-                            'Cartão A–D com QR da prova (sem aluno).',
+                            'Cartão A–D com QR da prova. Na correção, o app pede o '
+                            'aluno e corrige na ordem original.',
                             style: text.bodyMedium,
                           ),
                         ),

@@ -190,4 +190,26 @@ class ProvaRtdbRepository implements ProvaRepository {
     await _removerVariacoes(anteriores);
     return variacao;
   }
+
+  @override
+  Future<VariacaoDeProva> variacaoFolhaGeral({
+    required String provaId,
+    required String alunoId,
+  }) async {
+    final Prova? prova = await getById(provaId);
+    if (prova == null) {
+      throw StateError('Prova não encontrada: $provaId');
+    }
+    for (final VariacaoDeProva v in await listVariacoes(provaId)) {
+      if (v.alunoId == alunoId && v.emOrdemOriginal(prova)) {
+        return v;
+      }
+    }
+    return gerarVariacao(
+      provaId: provaId,
+      alunoId: alunoId,
+      embaralharQuestoes: false,
+      embaralharAlternativas: false,
+    );
+  }
 }

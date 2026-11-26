@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 
+import 'package:meu_app/features/geracao/domain/layout_folha.dart';
 import 'package:meu_app/features/geracao/domain/qr_payload.dart';
 import 'package:meu_app/shared/models/aluno.dart';
 import 'package:meu_app/shared/models/prova.dart';
@@ -84,7 +85,6 @@ class ProvaPdfService {
   const ProvaPdfService();
 
   static const List<String> letras = <String>['A', 'B', 'C', 'D', 'E', 'F'];
-  static const int _linhasPorColuna = 22;
 
   /// Monta um único PDF com todas as [copias] (uma por aluno ou uma geral).
   Future<Uint8List> gerar({
@@ -164,31 +164,16 @@ class ProvaPdfService {
 
   pw.MultiPage _paginaFolha(Prova prova, CopiaProva copia) {
     final int total = copia.questoes.length;
-    final int maxAlternativas = copia.questoes.fold<int>(
-      4,
-      (int m, Questao q) => q.alternativas.length > m ? q.alternativas.length : m,
-    );
 
-    // Agrupa as linhas em colunas de até _linhasPorColuna questões e coloca
-    // duas colunas lado a lado.
-    final List<pw.Widget> blocos = <pw.Widget>[];
-    for (int inicio = 0; inicio < total; inicio += _linhasPorColuna * 2) {
-      final int fimEsq = _min(inicio + _linhasPorColuna, total);
-      final int fimDir = _min(fimEsq + _linhasPorColuna, total);
-      blocos.add(
-        pw.Row(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: <pw.Widget>[
-            pw.Expanded(child: _colunaBolhas(inicio, fimEsq, maxAlternativas)),
-            pw.SizedBox(width: 24),
-            pw.Expanded(
-              child: fimDir > fimEsq
-                  ? _colunaBolhas(fimEsq, fimDir, maxAlternativas)
-                  : pw.SizedBox(),
-            ),
-          ],
-        ),
-      );
+    // Um quadro com marcadores a cada 44 questões (o leitor óptico lê o
+    // primeiro quadro).
+    final List<pw.Widget> quadros = <pw.Widget>[];
+    for (int inicio = 0; inicio < total; inicio += LayoutFolha.maxQuestoes) {
+      final int fim = _min(inicio + LayoutFolha.maxQuestoes, total);
+      if (quadros.isNotEmpty) {
+        quadros.add(pw.SizedBox(height: 16));
+      }
+      quadros.add(_quadroBolhas(inicio, fim - inicio));
     }
 
     return pw.MultiPage(
@@ -196,57 +181,112 @@ class ProvaPdfService {
       margin: const pw.EdgeInsets.fromLTRB(40, 36, 40, 36),
       build: (pw.Context context) => <pw.Widget>[
         _cabecalho(prova, copia, titulo: 'Folha de respostas', comQr: true),
-        pw.SizedBox(height: 12),
+        pw.SizedBox(height: 10),
         pw.Text(
-          'Preencha completamente o círculo da alternativa escolhida, com '
-          'caneta azul ou preta. Não rasure e não dobre esta folha.',
+          'Preencha todo o círculo da alternativa escolhida, com caneta azul '
+          'ou preta. Marque só uma por questão. Não rasure, não dobre e não '
+          'escreva sobre os quadrados pretos.',
           style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey800),
         ),
-        pw.SizedBox(height: 14),
-        ...blocos,
+        pw.SizedBox(height: 10),
+        ...quadros,
       ],
     );
   }
 
-  pw.Widget _colunaBolhas(int inicio, int fim, int alternativas) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: List<pw.Widget>.generate(fim - inicio, (int k) {
-        final int numero = inicio + k + 1;
-        return pw.Container(
-          padding: const pw.EdgeInsets.symmetric(vertical: 3),
-          child: pw.Row(
-            children: <pw.Widget>[
-              pw.SizedBox(
-                width: 26,
-                child: pw.Text(
-                  '$numero',
+  /// Grade de bolhas com geometria fixa ([LayoutFolha]), lida pela câmera.
+  pw.Widget _quadroBolhas(int inicio, int quantidade) {
+    final LayoutFolha layout = LayoutFolha(quantidade);
+    const double m = LayoutFolha.marcador;
+    const double r = LayoutFolha.raioBolha;
+
+    pw.Widget quadrado(double cx, double cy, double lado) => pw.Positioned(
+          left: cx - lado / 2,
+          top: cy - lado / 2,
+          child: pw.Container(
+            width: lado,
+            height: lado,
+            color: PdfColors.black,
+          ),
+        );
+
+    pw.Widget centrado(double cx, double cy, double w, double h,
+            pw.Widget child) =>
+        pw.Positioned(
+          left: cx - w / 2,
+          top: cy - h / 2,
+          child: pw.SizedBox(
+            width: w,
+            height: h,
+            child: pw.Center(child: child),
+          ),
+        );
+
+    return pw.SizedBox(
+      width: LayoutFolha.largura,
+      height: layout.altura,
+      child: pw.Stack(
+        children: <pw.Widget>[
+          for (final Ponto c in layout.centrosMarcadores) quadrado(c.x, c.y, m),
+          quadrado(
+            layout.centroOrientacao.x,
+            layout.centroOrientacao.y,
+            LayoutFolha.orientacao,
+          ),
+          for (int col = 0; col < layout.colunas; col++)
+            for (int a = 0; a < LayoutFolha.alternativas; a++)
+              centrado(
+                layout.centroLetra(col, a).x,
+                layout.centroLetra(col, a).y,
+                2 * r,
+                12,
+                pw.Text(
+                  letras[a],
                   style: pw.TextStyle(
-                    fontSize: 10,
+                    fontSize: 9,
                     fontWeight: pw.FontWeight.bold,
+                    color: PdfColors.grey700,
                   ),
                 ),
               ),
-              ...List<pw.Widget>.generate(alternativas, (int j) {
-                return pw.Container(
-                  width: 18,
-                  height: 18,
-                  margin: const pw.EdgeInsets.only(right: 8),
-                  alignment: pw.Alignment.center,
+          for (int q = 0; q < quantidade; q++) ...<pw.Widget>[
+            pw.Positioned(
+              left: layout.xDaColuna(layout.posicao(q).coluna),
+              top: layout.centroBolha(q, 0).y - 6,
+              child: pw.SizedBox(
+                width: LayoutFolha.xPrimeiraBolha - 8,
+                height: 12,
+                child: pw.Align(
+                  alignment: pw.Alignment.centerRight,
+                  child: pw.Text(
+                    '${inicio + q + 1}',
+                    style: pw.TextStyle(
+                      fontSize: 10,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            for (int a = 0; a < LayoutFolha.alternativas; a++)
+              pw.Positioned(
+                left: layout.centroBolha(q, a).x - r,
+                top: layout.centroBolha(q, a).y - r,
+                child: pw.Container(
+                  width: 2 * r,
+                  height: 2 * r,
                   decoration: pw.BoxDecoration(
                     shape: pw.BoxShape.circle,
-                    border: pw.Border.all(color: PdfColors.grey800, width: 1),
+                    border: pw.Border.all(
+                      color: PdfColors.grey800,
+                      width: LayoutFolha.contornoBolha,
+                    ),
                   ),
-                  child: pw.Text(
-                    j < letras.length ? letras[j] : '${j + 1}',
-                    style: const pw.TextStyle(fontSize: 8),
-                  ),
-                );
-              }),
-            ],
-          ),
-        );
-      }),
+                ),
+              ),
+          ],
+        ],
+      ),
     );
   }
 

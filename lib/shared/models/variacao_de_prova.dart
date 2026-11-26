@@ -1,3 +1,5 @@
+import 'package:meu_app/shared/models/prova.dart';
+
 /// Versão embaralhada de uma prova vinculada a um aluno.
 class VariacaoDeProva {
   const VariacaoDeProva({
@@ -62,5 +64,28 @@ class VariacaoDeProva {
       'ordemAlternativas': ordemAlternativas,
       'gabaritoRemapeado': gabaritoRemapeado,
     };
+  }
+
+  /// `true` se esta variação segue a ordem original da [prova] (questões e
+  /// alternativas sem embaralhar) — é a ordem impressa na folha geral.
+  bool emOrdemOriginal(Prova prova) {
+    final List<String> esperada = prova.questaoIds
+        .where((String id) => ordemAlternativas.containsKey(id))
+        .toList();
+    if (esperada.length != ordemQuestoes.length) {
+      return false;
+    }
+    for (int i = 0; i < esperada.length; i++) {
+      if (esperada[i] != ordemQuestoes[i]) {
+        return false;
+      }
+      final List<int> perm = ordemAlternativas[esperada[i]]!;
+      for (int j = 0; j < perm.length; j++) {
+        if (perm[j] != j) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 }
